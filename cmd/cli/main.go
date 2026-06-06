@@ -25,6 +25,7 @@ func main() {
 	}
 	pluginCmd.AddCommand(initCmd())
 	pluginCmd.AddCommand(publishCmd())
+	pluginCmd.AddCommand(registerCmd())
 	pluginCmd.AddCommand(installCmd())
 	pluginCmd.AddCommand(searchCmd())
 	rootCmd.AddCommand(pluginCmd)
