@@ -3,6 +3,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"os"
@@ -21,8 +22,14 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/spf13/viper"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/jackc/pgx/v5/stdlib"
 )
+
+// init registers the pgx driver under the name "postgres" so that
+// ent's generated Open function can find it.
+func init() {
+	sql.Register("postgres", stdlib.GetDefaultDriver())
+}
 
 func main() {
 	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelInfo})))

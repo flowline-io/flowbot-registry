@@ -8,7 +8,7 @@
 server:
   # Address for the HTTP API server to listen on.
   # Format: host:port or :port (binds all interfaces).
-  listen: ":8080"
+  listen: ':8080'
 
 # PostgreSQL database connection.
 database:
@@ -27,6 +27,7 @@ registry:
 # Authentication settings.
 auth:
   # Path to the RSA private key PEM file used for JWT signing (RS256).
+  # Generate with: openssl genrsa -out private.pem 2048
   # Must be kept secret. Never commit the actual key to version control.
   jwt_private_key_path: ${JWT_PRIVATE_KEY_PATH:-./private.pem}
   # JWT token expiration time in seconds (default: 1 hour).
