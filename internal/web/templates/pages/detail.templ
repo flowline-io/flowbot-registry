@@ -26,7 +26,19 @@ templ DetailPage(p store.PluginRecord, nsName string, versions []store.PluginVer
 					} else {
 						<h1 class="text-3xl font-bold">{ p.Name }</h1>
 					}
-					<div class="badge badge-outline mt-2">{ nsName }</div>
+					<div class="flex items-center gap-2 mt-2">
+						<div class="badge badge-outline">{ nsName }</div>
+						if author, ok := activeVersion.ManifestJSON["author"]; ok {
+							if authorStr, ok2 := author.(string); ok2 && authorStr != "" {
+								<div class="text-sm text-base-content/60">by { authorStr }</div>
+							}
+						}
+						if runtime, ok := activeVersion.ManifestJSON["runtime"]; ok {
+							if runtimeStr, ok2 := runtime.(string); ok2 && runtimeStr != "" {
+								<div class="badge badge-sm">{ runtimeStr }</div>
+							}
+						}
+					</div>
 				</div>
 				if p.Description != "" {
 					<p class="text-lg text-base-content/70 mb-6">{ p.Description }</p>

@@ -1,0 +1,61 @@
+version: 2
+
+project_name: flowbot-registry
+
+before:
+  hooks:
+    - go mod download
+
+builds:
+  - id: flowbot-registry
+    main: ./cmd/server
+    binary: flowbot-registry
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+    ldflags:
+      - -s -w -X github.com/flowline-io/flowbot-registry/version.Buildtags={{.Version}}
+      - -s -w -X github.com/flowline-io/flowbot-registry/version.Buildstamp={{.Date}}
+
+  - id: flowbot
+    main: ./cmd/cli
+    binary: flowbot
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+    ldflags:
+      - -s -w -X github.com/flowline-io/flowbot-registry/version.Buildtags={{.Version}}
+      - -s -w -X github.com/flowline-io/flowbot-registry/version.Buildstamp={{.Date}}
+
+archives:
+  - formats: ["binary"]
+    name_template: >-
+      {{ .Binary }}_{{ .Os }}_{{ .Arch }}
+
+checksum:
+  name_template: "{{ .ProjectName }}_checksums.txt"
+
+changelog:
+  sort: desc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^Merge"
+
+report_sizes: true
+
+release:
+  github:
+    owner: flowline-io
+    name: flowbot-registry

@@ -191,6 +191,7 @@ func (s *PluginService) Publish(ctx context.Context, req PublishRequest) (*Publi
 		"version":     m.Version,
 		"description": m.Description,
 		"author":      m.Author,
+		"runtime":     string(m.Runtime),
 	}
 
 	result, err := s.upsertRecords(ctx, req, manifestData, string(rawReadme))
@@ -198,12 +199,6 @@ func (s *PluginService) Publish(ctx context.Context, req PublishRequest) (*Publi
 		logger.Error("publish: upsert failed", "error", err)
 		return nil, err
 	}
-
-	logger.Info("publish: success",
-		"plugin_id", result.PluginID,
-		"plugin_version_id", result.PluginVersionID,
-		"created", result.Created,
-	)
 
 	return result, nil
 }
@@ -264,13 +259,24 @@ func (s *PluginService) upsertRecords(ctx context.Context, req PublishRequest, m
 		return nil, fmt.Errorf("namespace: %w", err)
 	}
 
+	description := ""
+	if d, ok := manifestData["description"].(string); ok {
+		description = d
+	}
+
 	p, err := tx.PluginGetByNamespaceAndName(ctx, ns.ID, req.Name)
 	if errors.Is(err, store.ErrNotFound) {
 		slog.Debug("publish: creating plugin", "namespace", req.Namespace, "name", req.Name)
-		p, err = tx.PluginCreate(ctx, ns.ID, req.Name, "", "", "")
+		p, err = tx.PluginCreate(ctx, ns.ID, req.Name, "", description, "")
 	}
 	if err != nil {
 		return nil, fmt.Errorf("plugin: %w", err)
+	}
+
+	if p.Description != description {
+		if err := tx.PluginUpdate(ctx, p.ID, "", description, ""); err != nil {
+			return nil, fmt.Errorf("plugin update: %w", err)
+		}
 	}
 
 	imageRef := fmt.Sprintf("%s/%s/%s:%s", oci.StripScheme(s.registryURL), req.Namespace, req.Name, req.Version)

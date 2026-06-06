@@ -177,6 +177,19 @@ func (a *Adapter) PluginCreate(ctx context.Context, namespaceID int, name string
 	}, nil
 }
 
+// PluginUpdate updates an existing plugin's display metadata.
+func (a *Adapter) PluginUpdate(ctx context.Context, id int, displayName string, description string, logoURL string) error {
+	_, err := a.client.Plugin.UpdateOneID(id).
+		SetDisplayName(displayName).
+		SetDescription(description).
+		SetLogoURL(logoURL).
+		Save(ctx)
+	if err != nil {
+		return fmt.Errorf("update plugin: %w", err)
+	}
+	return nil
+}
+
 // PluginVersionGetByPluginAndVersion retrieves a plugin version by plugin and version string.
 func (a *Adapter) PluginVersionGetByPluginAndVersion(ctx context.Context, pluginID int, version string) (*PluginVersionRecord, error) {
 	pv, err := a.client.PluginVersion.Query().
@@ -368,6 +381,16 @@ func (ta *TxAdapter) PluginCreate(ctx context.Context, namespaceID int, name str
 		ID: p.ID, NamespaceID: p.NamespaceID, Name: p.Name,
 		DisplayName: p.DisplayName, Description: p.Description, LogoURL: p.LogoURL,
 	}, nil
+}
+
+// PluginUpdate updates an existing plugin's display metadata within a transaction.
+func (ta *TxAdapter) PluginUpdate(ctx context.Context, id int, displayName string, description string, logoURL string) error {
+	_, err := ta.tx.Plugin.UpdateOneID(id).
+		SetDisplayName(displayName).SetDescription(description).SetLogoURL(logoURL).Save(ctx)
+	if err != nil {
+		return fmt.Errorf("update plugin: %w", err)
+	}
+	return nil
 }
 
 // PluginVersionGetByPluginAndVersion retrieves a plugin version within a transaction.
