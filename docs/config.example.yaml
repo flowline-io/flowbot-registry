@@ -1,0 +1,35 @@
+# Flowbot Registry configuration example.
+# Copy this file to the repository root as config.yaml and adjust values.
+#
+# Environment variable substitution is supported via ${VAR:-default} syntax.
+# All paths are relative to the working directory unless absolute.
+
+# HTTP server settings.
+server:
+  # Address for the HTTP API server to listen on.
+  # Format: host:port or :port (binds all interfaces).
+  listen: ":8080"
+
+# PostgreSQL database connection.
+database:
+  # Database driver. Only "postgres" is supported.
+  driver: postgres
+  # Data source name. Supports ${VAR:-default} env var substitution.
+  dsn: ${DATABASE_DSN:-postgres://flowbot:flowbot@localhost:5432/flowbot_registry?sslmode=disable}
+
+# OCI registry configuration.
+registry:
+  # Internal OCI registry URL used by the server for push/pull operations.
+  url: ${REGISTRY_URL:-http://localhost:5000}
+  # Public-facing registry URL exposed to CLI clients.
+  public_url: ${REGISTRY_PUBLIC_URL:-registry.flowbot.io}
+
+# Authentication settings.
+auth:
+  # Path to the RSA private key PEM file used for JWT signing (RS256).
+  # Must be kept secret. Never commit the actual key to version control.
+  jwt_private_key_path: ${JWT_PRIVATE_KEY_PATH:-./private.pem}
+  # JWT token expiration time in seconds (default: 1 hour).
+  jwt_expiration: 3600
+  # Issuer claim embedded in JWT tokens. Identifies the token authority.
+  jwt_issuer: flowbot-registry
