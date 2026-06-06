@@ -28,6 +28,7 @@ func main() {
 	pluginCmd.AddCommand(registerCmd())
 	pluginCmd.AddCommand(installCmd())
 	pluginCmd.AddCommand(searchCmd())
+	pluginCmd.AddCommand(loginCmd())
 	rootCmd.AddCommand(pluginCmd)
 
 	if err := rootCmd.Execute(); err != nil {
