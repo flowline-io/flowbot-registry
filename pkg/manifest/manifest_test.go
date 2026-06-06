@@ -21,6 +21,9 @@ func TestParseManifest(t *testing.T) {
 version: "1.0.0"
 description: A test plugin
 author: test-author
+runtime: grpc
+grpc:
+  binary: ./plugin
 `),
 			wantError: false,
 			wantName:  "my-plugin",
@@ -41,6 +44,74 @@ description: no name here
 		{
 			name:      "invalid yaml",
 			input:     []byte(`{{invalid yaml`),
+			wantError: true,
+		},
+		{
+			name: "valid grpc manifest with full schema",
+			input: []byte(`name: community/my-plugin
+version: "1.0.0"
+description: A gRPC plugin
+author: dev@example.com
+runtime: grpc
+provides:
+  module: true
+  abilities:
+    - capability: bookmark
+      operations: [list, get]
+grpc:
+  binary: ./plugin-server
+  args: ["--port", "0"]
+config_schema:
+  type: object
+  properties:
+    api_key:
+      type: string
+`),
+			wantError: false,
+			wantName:  "community/my-plugin",
+			wantVer:   "1.0.0",
+		},
+		{
+			name: "valid wasm manifest with permissions",
+			input: []byte(`name: community/my-wasm
+version: "0.1.0"
+runtime: wasm
+provides:
+  module: true
+wasm:
+  module: ./plugin.wasm
+  permissions:
+    memory:
+      max: "64MB"
+    execution:
+      timeout: "30s"
+`),
+			wantError: false,
+			wantName:  "community/my-wasm",
+			wantVer:   "0.1.0",
+		},
+		{
+			name: "invalid runtime kind",
+			input: []byte(`name: my-plugin
+version: "1.0.0"
+runtime: invalid
+`),
+			wantError: true,
+		},
+		{
+			name: "grpc runtime without grpc config",
+			input: []byte(`name: my-plugin
+version: "1.0.0"
+runtime: grpc
+`),
+			wantError: true,
+		},
+		{
+			name: "wasm runtime without wasm config",
+			input: []byte(`name: my-plugin
+version: "1.0.0"
+runtime: wasm
+`),
 			wantError: true,
 		},
 	}
