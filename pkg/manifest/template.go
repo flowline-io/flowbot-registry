@@ -29,7 +29,7 @@ func InitFileSet(namespace, name string, runtime RuntimeKind) ([]InitFile, error
 
 	files = append(files, InitFile{Path: "go.mod", Content: GenerateGoMod(namespace, name, runtime)})
 
-	files = append(files, InitFile{Path: "main.go", Content: GenerateMainGo(runtime)})
+	files = append(files, InitFile{Path: "main.go", Content: generateServerMainGo()})
 
 	if runtime == RuntimeGRPC {
 		files = append(files, InitFile{Path: "cmd/server/main.go", Content: generateServerMainGo()})
@@ -104,19 +104,6 @@ func GenerateGoMod(namespace, name string, runtime RuntimeKind) []byte {
 	return []byte(fmt.Sprintf(goModTemplate, namespace, name, req))
 }
 
-var grpcMainGo = `package main
-
-import "github.com/flowline-io/flowbot-registry/pkg/plugin/sdk"
-
-type plugin struct {
-	sdk.ModuleBase
-}
-
-func main() {
-	sdk.ServeModule(&plugin{})
-}
-`
-
 var wasmMainGo = `package main
 
 //go:wasmexport alloc
@@ -132,7 +119,7 @@ func main() {}
 func GenerateMainGo(runtime RuntimeKind) []byte {
 	switch runtime {
 	case RuntimeGRPC:
-		return []byte(grpcMainGo)
+		return generateServerMainGo()
 	case RuntimeWasm:
 		return []byte(wasmMainGo)
 	default:

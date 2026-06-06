@@ -62,32 +62,46 @@ func TestGenerateGoMod(t *testing.T) {
 		name      string
 		namespace string
 		plugin    string
+		runtime   RuntimeKind
 		check     string
 	}{
 		{
 			name:      "go.mod contains module path",
 			namespace: "community",
 			plugin:    "my-plugin",
+			runtime:   RuntimeGRPC,
 			check:     "module github.com/community/my-plugin",
 		},
 		{
 			name:      "go.mod declares go version",
 			namespace: "org",
 			plugin:    "test-plugin",
+			runtime:   RuntimeGRPC,
 			check:     "go 1.",
 		},
 		{
 			name:      "go.mod requires go-plugin sdk for grpc",
 			namespace: "org",
 			plugin:    "grpc-plugin",
+			runtime:   RuntimeGRPC,
 			check:     "module",
+		},
+		{
+			name:      "wasm go.mod has no require line",
+			namespace: "org",
+			plugin:    "wasm-plugin",
+			runtime:   RuntimeWasm,
+			check:     "module github.com/org/wasm-plugin",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := GenerateGoMod(tt.namespace, tt.plugin, RuntimeGRPC)
+			got := GenerateGoMod(tt.namespace, tt.plugin, tt.runtime)
 			assert.Contains(t, string(got), tt.check)
+			if tt.runtime == RuntimeWasm {
+				assert.NotContains(t, string(got), "require")
+			}
 		})
 	}
 }
@@ -119,6 +133,42 @@ func TestGenerateMainGo(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got := GenerateMainGo(tt.runtime)
 			assert.Contains(t, string(got), tt.check)
+		})
+	}
+}
+
+func TestPluginNameFromRef(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		wantNs   string
+		wantName string
+	}{
+		{
+			name:     "full namespace/name",
+			input:    "community/my-plugin",
+			wantNs:   "community",
+			wantName: "my-plugin",
+		},
+		{
+			name:     "bare name defaults to default namespace",
+			input:    "my-plugin",
+			wantNs:   "default",
+			wantName: "my-plugin",
+		},
+		{
+			name:     "org with hyphen",
+			input:    "my-org/github-stars",
+			wantNs:   "my-org",
+			wantName: "github-stars",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ns, name := PluginNameFromRef(tt.input)
+			assert.Equal(t, tt.wantNs, ns)
+			assert.Equal(t, tt.wantName, name)
 		})
 	}
 }
