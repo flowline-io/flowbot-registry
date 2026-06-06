@@ -7,10 +7,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/google/go-containerregistry/pkg/v1"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/empty"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
@@ -27,8 +28,6 @@ type ArtifactFile struct {
 	Content []byte
 }
 
-const pluginConfigMediaType = "application/vnd.flowbot.plugin.config.v1+yaml"
-
 // PushArtifactOption configures a push operation.
 type PushArtifactOption func(*pushArtifactConfig)
 
@@ -43,8 +42,8 @@ func WithAuth(a authn.Authenticator) PushArtifactOption {
 	}
 }
 
-// PushArtifact creates tar.gz OCI layers from files and pushes a single manifest.
-func (*Client) PushArtifact(ctx context.Context, refStr string, files []ArtifactFile, opts ...PushArtifactOption) (v1.Hash, error) {
+// PushArtifact creates tar.gz OCI layers from files and pushes an OCI artifact.
+func (c *Client) PushArtifact(ctx context.Context, refStr string, files []ArtifactFile, opts ...PushArtifactOption) (v1.Hash, error) {
 	cfg := &pushArtifactConfig{}
 	for _, o := range opts {
 		o(cfg)
@@ -68,7 +67,7 @@ func (*Client) PushArtifact(ctx context.Context, refStr string, files []Artifact
 		return v1.Hash{}, errors.New("no files to push")
 	}
 
-	img, err := mutate.Append(empty.Image, mutate.Addendum{Layer: layers[0], MediaType: types.MediaType(pluginConfigMediaType)})
+	img, err := mutate.Append(empty.Image, mutate.Addendum{Layer: layers[0], MediaType: types.OCILayer})
 	if err != nil {
 		return v1.Hash{}, fmt.Errorf("append first layer: %w", err)
 	}
@@ -80,7 +79,20 @@ func (*Client) PushArtifact(ctx context.Context, refStr string, files []Artifact
 		}
 	}
 
+	img = mutate.MediaType(img, types.OCIManifestSchema1)
+	img = mutate.ConfigMediaType(img, types.OCIConfigJSON)
+
+	annotations := map[string]string{
+		"org.opencontainers.image.created": time.Now().UTC().Format(time.RFC3339),
+		"org.opencontainers.image.version": ref.Identifier(),
+		"org.opencontainers.image.title":   ref.Context().RepositoryStr(),
+	}
+	img = mutate.Annotations(img, annotations).(v1.Image)
+
 	remoteOpts := []remote.Option{remote.WithContext(ctx)}
+	if c.plainHTTP {
+		remoteOpts = append(remoteOpts, remote.WithTransport(c.Transport()))
+	}
 	if cfg.auth != nil {
 		remoteOpts = append(remoteOpts, remote.WithAuth(cfg.auth))
 	} else {
@@ -100,13 +112,18 @@ func (*Client) PushArtifact(ctx context.Context, refStr string, files []Artifact
 }
 
 // HeadManifest checks if a manifest exists at the given reference.
-func (*Client) HeadManifest(ctx context.Context, refStr string) (v1.Hash, error) {
+func (c *Client) HeadManifest(ctx context.Context, refStr string) (v1.Hash, error) {
 	ref, err := name.ParseReference(refStr)
 	if err != nil {
 		return v1.Hash{}, fmt.Errorf("parse reference %s: %w", refStr, err)
 	}
 
-	desc, err := remote.Head(ref, remote.WithContext(ctx), remote.WithAuthFromKeychain(authn.DefaultKeychain))
+	remoteOpts := []remote.Option{remote.WithContext(ctx), remote.WithAuthFromKeychain(authn.DefaultKeychain)}
+	if c.plainHTTP {
+		remoteOpts = append(remoteOpts, remote.WithTransport(c.Transport()))
+	}
+
+	desc, err := remote.Head(ref, remoteOpts...)
 	if err != nil {
 		return v1.Hash{}, fmt.Errorf("%w: %w", ErrNotFound, err)
 	}

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/flowline-io/flowbot-registry/pkg/oci"
 	"github.com/spf13/cobra"
 )
 
@@ -126,7 +127,33 @@ func fetchPluginVersionFromStore(storeURL string, namespace string, name string,
 }
 
 func pullOCIArtifact(ctx context.Context, ref string, destDir string) error {
-	_ = ctx
-	_, _ = fmt.Printf("Pulling artifact: %s -> %s\n", ref, destDir)
-	return fmt.Errorf("%w: OCI pull via oras-go not yet wired (target: %s)", errNotImplemented, ref)
+	slog.Debug("install: pulling OCI artifact", "ref", ref, "dest", destDir)
+
+	ociClient := oci.NewClient(ref)
+	cleanRef := oci.StripScheme(ref)
+
+	img, err := ociClient.FetchManifest(ctx, cleanRef)
+	if err != nil {
+		return fmt.Errorf("fetch manifest: %w", err)
+	}
+
+	layers, err := oci.ExtractAllLayers(img)
+	if err != nil {
+		return fmt.Errorf("extract layers: %w", err)
+	}
+
+	for _, lf := range layers {
+		destPath := filepath.Join(destDir, lf.Name)
+		slog.Debug("install: writing file", "file", lf.Name, "size", len(lf.Content), "dest", destPath)
+
+		if mkErr := os.MkdirAll(filepath.Dir(destPath), 0o755); mkErr != nil {
+			return fmt.Errorf("create directory %s: %w", filepath.Dir(destPath), mkErr)
+		}
+
+		if writeErr := os.WriteFile(destPath, lf.Content, 0o644); writeErr != nil {
+			return fmt.Errorf("write file %s: %w", lf.Name, writeErr)
+		}
+	}
+
+	return nil
 }

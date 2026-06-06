@@ -29,20 +29,23 @@ Example:
 		RunE: runRegister,
 	}
 
-	cmd.Flags().StringVar(&registerArgs.registryURL, "registry", envOrFlag("FLOWBOT_REGISTRY_URL", "ghcr.io"), "OCI registry URL")
+	cmd.Flags().StringVar(&registerArgs.registryURL, "registry", envOrFlag("FLOWBOT_REGISTRY_URL", "ghcr.io"), "OCI registry URL (auto-discovered from store by default)")
 	cmd.Flags().StringVar(&registerArgs.storeURL, "store-url", envOrFlag("FLOWBOT_STORE_URL", "http://localhost:8128"), "Store API URL")
 	cmd.Flags().StringVar(&registerArgs.apiKey, "api-key", envOrFlag("FLOWBOT_API_KEY", ""), "API key for store authentication")
 
 	return cmd
 }
 
-func runRegister(_ *cobra.Command, args []string) error {
+func runRegister(cmd *cobra.Command, args []string) error {
 	ns, name, version, err := parseRegisterRef(args[0])
 	if err != nil {
 		return err
 	}
 
-	ociRef := fmt.Sprintf("%s/%s/%s:%s", strings.TrimRight(registerArgs.registryURL, "/"), ns, name, version)
+	// Resolve registry URL from store if not explicitly set.
+	registerArgs.registryURL = resolveRegistryURLFromStore(cmd, registerArgs.storeURL, registerArgs.registryURL)
+
+	ociRef := fmt.Sprintf("%s/%s/%s:%s", strings.TrimRight(oci.StripScheme(registerArgs.registryURL), "/"), ns, name, version)
 
 	slog.Info("register: checking OCI manifest", "ref", ociRef)
 

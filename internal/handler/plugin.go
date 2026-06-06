@@ -9,8 +9,21 @@ import (
 	"strconv"
 
 	"github.com/flowline-io/flowbot-registry/internal/service"
+	"github.com/flowline-io/flowbot-registry/pkg/store"
 	"github.com/gofiber/fiber/v3"
 )
+
+// RegistryInfoResponse represents the JSON response from GET /api/v1/registry.
+type RegistryInfoResponse struct {
+	URL string `json:"url"`
+}
+
+// RegistryInfoHandler returns the configured OCI registry URL.
+func RegistryInfoHandler(registryURL string) fiber.Handler {
+	return func(c fiber.Ctx) error {
+		return c.JSON(RegistryInfoResponse{URL: registryURL})
+	}
+}
 
 // PublishRequest represents the request body for plugin publish.
 type PublishRequest struct {
@@ -64,7 +77,7 @@ func PublishHandler(svc *service.PluginService) fiber.Handler {
 
 func handlePublishError(c fiber.Ctx, err error, namespace, name string) error {
 	switch {
-	case errors.Is(err, service.ErrNotFound):
+	case errors.Is(err, service.ErrNotFound) || errors.Is(err, store.ErrNotFound):
 		return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	case errors.Is(err, service.ErrForbidden):
 		return c.Status(http.StatusForbidden).JSON(fiber.Map{"error": err.Error()})
@@ -118,7 +131,7 @@ func GetVersionHandler(svc *service.PluginService) fiber.Handler {
 
 		pv, err := svc.GetPluginVersion(c.Context(), namespace, name, version)
 		if err != nil {
-			if errors.Is(err, service.ErrNotFound) {
+			if errors.Is(err, service.ErrNotFound) || errors.Is(err, store.ErrNotFound) {
 				return c.Status(http.StatusNotFound).JSON(fiber.Map{
 					"error": "version not found",
 				})

@@ -39,7 +39,7 @@ Requires:
 		RunE: runPublish,
 	}
 
-	cmd.Flags().StringVar(&publishArgs.registryURL, "registry", envOrFlag("FLOWBOT_REGISTRY_URL", "ghcr.io"), "OCI registry URL")
+	cmd.Flags().StringVar(&publishArgs.registryURL, "registry", envOrFlag("FLOWBOT_REGISTRY_URL", "ghcr.io"), "OCI registry URL (auto-discovered from store by default)")
 	cmd.Flags().StringVar(&publishArgs.storeURL, "store-url", envOrFlag("FLOWBOT_STORE_URL", "http://localhost:8128"), "Store API URL")
 	cmd.Flags().StringVar(&publishArgs.apiKey, "api-key", envOrFlag("FLOWBOT_API_KEY", ""), "API key for store authentication")
 	cmd.Flags().StringVar(&publishArgs.keyPath, "key", envOrFlag("COSIGN_KEY_PATH", ""), "Cosign private key path")
@@ -56,7 +56,7 @@ func envOrFlag(envKey, fallback string) string {
 	return fallback
 }
 
-func runPublish(_ *cobra.Command, _ []string) error {
+func runPublish(cmd *cobra.Command, _ []string) error {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("get working directory: %w", err)
@@ -75,12 +75,15 @@ func runPublish(_ *cobra.Command, _ []string) error {
 		return fmt.Errorf("parse plugin.yaml: %w", err)
 	}
 
+	// Resolve registry URL from store if not explicitly set.
+	publishArgs.registryURL = resolveRegistryURLFromStore(cmd, publishArgs.storeURL, publishArgs.registryURL)
+
 	namespace, name := manifest.PluginNameFromRef(m.Name)
 
 	_, _ = fmt.Printf("Publishing plugin: %s/%s v%s\n", namespace, name, m.Version)
 	_, _ = fmt.Println()
 
-	ociRef := fmt.Sprintf("%s/%s/%s:%s", strings.TrimRight(publishArgs.registryURL, "/"), namespace, name, m.Version)
+	ociRef := fmt.Sprintf("%s/%s/%s:%s", strings.TrimRight(oci.StripScheme(publishArgs.registryURL), "/"), namespace, name, m.Version)
 	ociClient := oci.NewClient(publishArgs.registryURL)
 
 	existingDigest, err := buildAndPushArtifact(cwd, raw, m, ociRef, ociClient)

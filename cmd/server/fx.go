@@ -24,11 +24,12 @@ import (
 // AllModules returns all fx options needed to start the server.
 func AllModules() fx.Option {
 	return fx.Options(
-		fx.Provide(
-			newViper,
-			newEntClient,
-			newFiberApp,
-		),
+	fx.Provide(
+		newViper,
+		newEntClient,
+		newFiberApp,
+		newRegistryURL,
+	),
 		fx.Invoke(runMigrations),
 		store.Module,
 		jwt.Module,
@@ -61,6 +62,14 @@ func newViper() *viper.Viper {
 	}
 
 	return v
+}
+
+func newRegistryURL(v *viper.Viper) string {
+	url := v.GetString("registry.url")
+	if url == "" {
+		url = "http://localhost:5000"
+	}
+	return url
 }
 
 func newEntClient(v *viper.Viper, lc fx.Lifecycle) (*ent.Client, error) {

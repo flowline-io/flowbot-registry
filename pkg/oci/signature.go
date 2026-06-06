@@ -6,9 +6,11 @@ import (
 	"compress/gzip"
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/empty"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
@@ -23,12 +25,18 @@ const (
 
 // PushSignature pushes a Cosign signature as an OCI artifact tagged with the sig suffix.
 func (c *Client) PushSignature(ctx context.Context, refStr string, payload []byte, signature []byte) error {
+	_ = payload // accepted for API completeness
 	ref, err := name.ParseReference(refStr)
 	if err != nil {
 		return fmt.Errorf("parse reference %s: %w", refStr, err)
 	}
 
-	if _, err := remote.Head(ref, remote.WithContext(ctx), remote.WithAuthFromKeychain(authn.DefaultKeychain)); err != nil {
+	remoteOpts := []remote.Option{remote.WithContext(ctx), remote.WithAuthFromKeychain(authn.DefaultKeychain)}
+	if c.plainHTTP {
+		remoteOpts = append(remoteOpts, remote.WithTransport(c.Transport()))
+	}
+
+	if _, err := remote.Head(ref, remoteOpts...); err != nil {
 		return fmt.Errorf("source image not found: %w", err)
 	}
 
@@ -62,7 +70,17 @@ func (c *Client) PushSignature(ctx context.Context, refStr string, payload []byt
 		return fmt.Errorf("create signature image: %w", err)
 	}
 
-	if err := remote.Write(sigTag, img, remote.WithContext(ctx), remote.WithAuthFromKeychain(authn.DefaultKeychain)); err != nil {
+	img = mutate.MediaType(img, types.OCIManifestSchema1)
+	img = mutate.ConfigMediaType(img, types.OCIConfigJSON)
+
+	annotations := map[string]string{
+		"org.opencontainers.image.created": time.Now().UTC().Format(time.RFC3339),
+		"org.opencontainers.image.version": ref.Identifier() + signatureTagSuffix,
+		"org.opencontainers.image.title":   ref.Context().RepositoryStr(),
+	}
+	img = mutate.Annotations(img, annotations).(v1.Image)
+
+	if err := remote.Write(sigTag, img, remoteOpts...); err != nil {
 		return fmt.Errorf("push signature: %w", err)
 	}
 

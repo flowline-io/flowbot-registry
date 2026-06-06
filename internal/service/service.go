@@ -92,10 +92,22 @@ func (s *AuthService) IssueJWT(ctx context.Context, service string, clientID str
 
 		_, err := s.store.NamespaceGetByName(ctx, nsName)
 		if err != nil {
-			slog.Warn("auth: namespace not found",
-				"namespace", nsName, "error", err, "client_id", clientID,
+			if !errors.Is(err, store.ErrNotFound) {
+				slog.Error("auth: namespace lookup failed",
+					"namespace", nsName, "error", err, "client_id", clientID,
+				)
+				return nil, fmt.Errorf("%w: namespace %s: %w", ErrForbidden, nsName, err)
+			}
+
+			slog.Info("auth: auto-creating namespace for first publish",
+				"namespace", nsName, "client_id", clientID,
 			)
-			return nil, fmt.Errorf("%w: namespace %s: %w", ErrForbidden, nsName, err)
+			if _, err := s.store.NamespaceCreate(ctx, nsName, "user"); err != nil {
+				slog.Error("auth: failed to auto-create namespace",
+					"namespace", nsName, "error", err,
+				)
+				return nil, fmt.Errorf("%w: namespace %s: %w", ErrForbidden, nsName, err)
+			}
 		}
 
 		accesses = append(accesses, jwt.AccessEntry{
@@ -197,7 +209,7 @@ func (s *PluginService) Publish(ctx context.Context, req PublishRequest) (*Publi
 }
 
 func (s *PluginService) fetchOCILayers(ctx context.Context, req PublishRequest) ([]byte, []byte, error) {
-	ociRef := fmt.Sprintf("%s/%s/%s", s.registryURL, req.Namespace, req.Name)
+	ociRef := fmt.Sprintf("%s/%s/%s", oci.StripScheme(s.registryURL), req.Namespace, req.Name)
 
 	slog.Debug("publish: fetching OCI manifest", "ref", ociRef, "digest", req.OciDigest)
 
@@ -206,7 +218,7 @@ func (s *PluginService) fetchOCILayers(ctx context.Context, req PublishRequest) 
 		return nil, nil, fmt.Errorf("fetch oci manifest: %w", err)
 	}
 
-	layers, err := oci.ExtractLayers(img, []string{"plugin.yaml", "README.md"})
+	layers, err := oci.ExtractLayers(img, []string{"plugin.yaml"})
 	if err != nil {
 		return nil, nil, fmt.Errorf("extract layers: %w", err)
 	}
@@ -216,13 +228,19 @@ func (s *PluginService) fetchOCILayers(ctx context.Context, req PublishRequest) 
 		switch lf.Name {
 		case "plugin.yaml":
 			rawManifest = lf.Content
-		case "README.md":
-			rawReadme = lf.Content
 		}
 	}
 
 	if rawManifest == nil {
 		return nil, nil, fmt.Errorf("%w: plugin.yaml not found in OCI image layers", ErrInvalidInput)
+	}
+
+	readmeLayers, _ := oci.ExtractLayers(img, []string{"README.md"})
+	for _, lf := range readmeLayers {
+		if lf.Name == "README.md" {
+			rawReadme = lf.Content
+			break
+		}
 	}
 
 	return rawManifest, rawReadme, nil
@@ -255,7 +273,7 @@ func (s *PluginService) upsertRecords(ctx context.Context, req PublishRequest, m
 		return nil, fmt.Errorf("plugin: %w", err)
 	}
 
-	imageRef := fmt.Sprintf("%s/%s/%s:%s", s.registryURL, req.Namespace, req.Name, req.Version)
+	imageRef := fmt.Sprintf("%s/%s/%s:%s", oci.StripScheme(s.registryURL), req.Namespace, req.Name, req.Version)
 
 	created := false
 	pv, err := tx.PluginVersionGetByPluginAndVersion(ctx, p.ID, req.Version)
