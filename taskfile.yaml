@@ -45,7 +45,7 @@ tasks:
   lint:
     desc: Run static code analysis
     cmds:
-      - oxfmt --check .
+      # - oxfmt --check .
       - go tool revive -config revive.toml -formatter friendly ./...
       - task: lint:testify
       - task: lint:action

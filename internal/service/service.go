@@ -99,34 +99,20 @@ func (s *AuthService) IssueJWT(ctx context.Context, service string, clientID str
 				)
 				return nil, fmt.Errorf("%w: namespace %s: %w", ErrForbidden, nsName, err)
 			}
+			return nil, fmt.Errorf("%w: namespace %s does not exist", ErrForbidden, nsName)
+		}
 
-			// Auto-create only if authenticated user
-			if userID != 0 {
-				slog.Info("auth: auto-creating namespace for first publish",
-					"namespace", nsName, "user_id", userID,
-				)
-				if _, err := s.store.NamespaceCreate(ctx, nsName, "user", userID); err != nil {
-					slog.Error("auth: failed to auto-create namespace",
-						"namespace", nsName, "error", err,
-					)
-					return nil, fmt.Errorf("%w: namespace %s: %w", ErrForbidden, nsName, err)
+		// Verify ownership: userID must match namespace.userID for push actions
+		if ns.UserID != nil && *ns.UserID != userID {
+			hasPush := false
+			for _, action := range sc.Actions {
+				if action == "push" {
+					hasPush = true
+					break
 				}
-			} else {
-				return nil, fmt.Errorf("%w: namespace %s does not exist", ErrForbidden, nsName)
 			}
-		} else {
-			// Verify ownership: userID must match namespace.userID for push actions
-			if ns.UserID != nil && *ns.UserID != userID {
-				hasPush := false
-				for _, action := range sc.Actions {
-					if action == "push" {
-						hasPush = true
-						break
-					}
-				}
-				if hasPush {
-					return nil, fmt.Errorf("%w: namespace %s is owned by another user", ErrForbidden, nsName)
-				}
+			if hasPush {
+				return nil, fmt.Errorf("%w: namespace %s is owned by another user", ErrForbidden, nsName)
 			}
 		}
 

@@ -25,11 +25,11 @@ func RegisterRoutes(app *fiber.App, authSvc *service.AuthService, userSvc *servi
 	api.Post("/auth/login", limiter, LoginHandler(userSvc))
 	api.Post("/auth/refresh", RefreshHandler(userSvc))
 
+	// Public: Docker v2 token (anonymous pull, authenticated push via IssueJWT logic)
+	api.Get("/auth/token", AuthTokenHandler(authSvc, userSvc))
+
 	// Authenticated
 	auth := api.Group("", middleware.AuthRequired(userSvc))
-
-	// Docker v2 token (requires User access token)
-	auth.Get("/auth/token", AuthTokenHandler(authSvc, userSvc))
 
 	// Plugin publish (requires namespace ownership)
 	nsLookup := func(ctx context.Context, name string) (*int, error) {
