@@ -143,11 +143,15 @@ func (a *Adapter) NamespaceGetByID(ctx context.Context, id int) (*NamespaceRecor
 }
 
 // NamespaceCreate creates a new namespace.
-func (a *Adapter) NamespaceCreate(ctx context.Context, name string, nsType string) (*NamespaceRecord, error) {
-	n, err := a.client.Namespace.Create().
+// userID is the owning user. Pass 0 for unowned namespaces.
+func (a *Adapter) NamespaceCreate(ctx context.Context, name string, nsType string, userID int) (*NamespaceRecord, error) {
+	create := a.client.Namespace.Create().
 		SetName(name).
-		SetType(nsType).
-		Save(ctx)
+		SetType(nsType)
+	if userID != 0 {
+		create.SetUserID(userID)
+	}
+	n, err := create.Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("create namespace: %w", err)
 	}
@@ -370,8 +374,13 @@ func (ta *TxAdapter) NamespaceGetByName(ctx context.Context, name string) (*Name
 }
 
 // NamespaceCreate creates a new namespace within a transaction.
-func (ta *TxAdapter) NamespaceCreate(ctx context.Context, name string, nsType string) (*NamespaceRecord, error) {
-	n, err := ta.tx.Namespace.Create().SetName(name).SetType(nsType).Save(ctx)
+// userID is the owning user. Pass 0 for unowned namespaces.
+func (ta *TxAdapter) NamespaceCreate(ctx context.Context, name string, nsType string, userID int) (*NamespaceRecord, error) {
+	create := ta.tx.Namespace.Create().SetName(name).SetType(nsType)
+	if userID != 0 {
+		create.SetUserID(userID)
+	}
+	n, err := create.Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("create namespace: %w", err)
 	}

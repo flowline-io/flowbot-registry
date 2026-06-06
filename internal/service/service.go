@@ -102,7 +102,7 @@ func (s *AuthService) IssueJWT(ctx context.Context, service string, clientID str
 			slog.Info("auth: auto-creating namespace for first publish",
 				"namespace", nsName, "client_id", clientID,
 			)
-			if _, err := s.store.NamespaceCreate(ctx, nsName, "user"); err != nil {
+			if _, err := s.store.NamespaceCreate(ctx, nsName, "user", 0); err != nil {
 				slog.Error("auth: failed to auto-create namespace",
 					"namespace", nsName, "error", err,
 				)
@@ -253,7 +253,7 @@ func (s *PluginService) upsertRecords(ctx context.Context, req PublishRequest, m
 	ns, err := tx.NamespaceGetByName(ctx, req.Namespace)
 	if errors.Is(err, store.ErrNotFound) {
 		slog.Debug("publish: creating namespace", "namespace", req.Namespace)
-		ns, err = tx.NamespaceCreate(ctx, req.Namespace, "user")
+		ns, err = tx.NamespaceCreate(ctx, req.Namespace, "user", 0)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("namespace: %w", err)
