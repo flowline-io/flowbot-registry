@@ -3,18 +3,22 @@ package store
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/flowline-io/flowbot-registry/internal/ent"
 	"github.com/flowline-io/flowbot-registry/internal/ent/namespace"
 	"github.com/flowline-io/flowbot-registry/internal/ent/plugin"
 	"github.com/flowline-io/flowbot-registry/internal/ent/pluginversion"
+	"github.com/flowline-io/flowbot-registry/internal/ent/refreshtoken"
+	"github.com/flowline-io/flowbot-registry/internal/ent/user"
 )
 
 // NamespaceRecord represents a namespace entity.
 type NamespaceRecord struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
-	Type string `json:"type"`
+	ID     int    `json:"id"`
+	Name   string `json:"name"`
+	Type   string `json:"type"`
+	UserID *int   `json:"user_id,omitempty"`
 }
 
 // PluginRecord represents a plugin entity.
@@ -36,6 +40,24 @@ type PluginVersionRecord struct {
 	OciDigest    string         `json:"oci_digest"`
 	ReadmeHTML   string         `json:"readme_html"`
 	ManifestJSON map[string]any `json:"manifest_json"`
+}
+
+// UserRecord represents a user entity.
+type UserRecord struct {
+	ID           int       `json:"id"`
+	Email        string    `json:"email"`
+	PasswordHash string    `json:"-"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+// RefreshTokenRecord represents a refresh token entity.
+type RefreshTokenRecord struct {
+	ID        int       `json:"id"`
+	UserID    int       `json:"user_id"`
+	TokenHash string    `json:"-"`
+	ExpiresAt time.Time `json:"expires_at"`
+	CreatedAt time.Time `json:"created_at"`
 }
 
 // StoreQuerier defines read operations for plugin store queries.
@@ -96,9 +118,10 @@ func (a *Adapter) NamespaceGetByName(ctx context.Context, name string) (*Namespa
 		return nil, fmt.Errorf("query namespace: %w", err)
 	}
 	return &NamespaceRecord{
-		ID:   n.ID,
-		Name: n.Name,
-		Type: n.Type,
+		ID:     n.ID,
+		Name:   n.Name,
+		Type:   n.Type,
+		UserID: n.UserID,
 	}, nil
 }
 
@@ -112,9 +135,10 @@ func (a *Adapter) NamespaceGetByID(ctx context.Context, id int) (*NamespaceRecor
 		return nil, fmt.Errorf("get namespace by id: %w", err)
 	}
 	return &NamespaceRecord{
-		ID:   n.ID,
-		Name: n.Name,
-		Type: n.Type,
+		ID:     n.ID,
+		Name:   n.Name,
+		Type:   n.Type,
+		UserID: n.UserID,
 	}, nil
 }
 
@@ -128,9 +152,10 @@ func (a *Adapter) NamespaceCreate(ctx context.Context, name string, nsType strin
 		return nil, fmt.Errorf("create namespace: %w", err)
 	}
 	return &NamespaceRecord{
-		ID:   n.ID,
-		Name: n.Name,
-		Type: n.Type,
+		ID:     n.ID,
+		Name:   n.Name,
+		Type:   n.Type,
+		UserID: n.UserID,
 	}, nil
 }
 
@@ -341,7 +366,7 @@ func (ta *TxAdapter) NamespaceGetByName(ctx context.Context, name string) (*Name
 		}
 		return nil, fmt.Errorf("query namespace: %w", err)
 	}
-	return &NamespaceRecord{ID: n.ID, Name: n.Name, Type: n.Type}, nil
+	return &NamespaceRecord{ID: n.ID, Name: n.Name, Type: n.Type, UserID: n.UserID}, nil
 }
 
 // NamespaceCreate creates a new namespace within a transaction.
@@ -350,7 +375,7 @@ func (ta *TxAdapter) NamespaceCreate(ctx context.Context, name string, nsType st
 	if err != nil {
 		return nil, fmt.Errorf("create namespace: %w", err)
 	}
-	return &NamespaceRecord{ID: n.ID, Name: n.Name, Type: n.Type}, nil
+	return &NamespaceRecord{ID: n.ID, Name: n.Name, Type: n.Type, UserID: n.UserID}, nil
 }
 
 // PluginGetByNamespaceAndName retrieves a plugin by namespace and name within a transaction.
@@ -427,4 +452,115 @@ func (ta *TxAdapter) PluginVersionUpdate(ctx context.Context, id int, ociRef str
 		return fmt.Errorf("update plugin version: %w", err)
 	}
 	return nil
+}
+
+// UserCreate creates a new user.
+func (a *Adapter) UserCreate(ctx context.Context, email, passwordHash string) (*UserRecord, error) {
+	u, err := a.client.User.Create().
+		SetEmail(email).
+		SetPasswordHash(passwordHash).
+		Save(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("create user: %w", err)
+	}
+	return &UserRecord{
+		ID:           u.ID,
+		Email:        u.Email,
+		PasswordHash: u.PasswordHash,
+		CreatedAt:    u.CreatedAt,
+		UpdatedAt:    u.UpdatedAt,
+	}, nil
+}
+
+// UserGetByEmail retrieves a user by email.
+func (a *Adapter) UserGetByEmail(ctx context.Context, email string) (*UserRecord, error) {
+	u, err := a.client.User.Query().Where(user.EmailEQ(email)).Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, fmt.Errorf("%w: user %s", ErrNotFound, email)
+		}
+		return nil, fmt.Errorf("query user: %w", err)
+	}
+	return &UserRecord{
+		ID:           u.ID,
+		Email:        u.Email,
+		PasswordHash: u.PasswordHash,
+		CreatedAt:    u.CreatedAt,
+		UpdatedAt:    u.UpdatedAt,
+	}, nil
+}
+
+// UserGetByID retrieves a user by ID.
+func (a *Adapter) UserGetByID(ctx context.Context, id int) (*UserRecord, error) {
+	u, err := a.client.User.Get(ctx, id)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, fmt.Errorf("%w: user id %d", ErrNotFound, id)
+		}
+		return nil, fmt.Errorf("get user by id: %w", err)
+	}
+	return &UserRecord{
+		ID:           u.ID,
+		Email:        u.Email,
+		PasswordHash: u.PasswordHash,
+		CreatedAt:    u.CreatedAt,
+		UpdatedAt:    u.UpdatedAt,
+	}, nil
+}
+
+// RefreshTokenCreate creates a new refresh token record.
+func (a *Adapter) RefreshTokenCreate(ctx context.Context, userID int, tokenHash string, expiresAt time.Time) (*RefreshTokenRecord, error) {
+	rt, err := a.client.RefreshToken.Create().
+		SetUserID(userID).
+		SetTokenHash(tokenHash).
+		SetExpiresAt(expiresAt).
+		Save(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("create refresh token: %w", err)
+	}
+	return &RefreshTokenRecord{
+		ID:        rt.ID,
+		UserID:    rt.UserID,
+		TokenHash: rt.TokenHash,
+		ExpiresAt: rt.ExpiresAt,
+		CreatedAt: rt.CreatedAt,
+	}, nil
+}
+
+// RefreshTokenGetByHash retrieves a refresh token by its hash.
+func (a *Adapter) RefreshTokenGetByHash(ctx context.Context, tokenHash string) (*RefreshTokenRecord, error) {
+	rt, err := a.client.RefreshToken.Query().Where(refreshtoken.TokenHashEQ(tokenHash)).Only(ctx)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, fmt.Errorf("%w: refresh token", ErrNotFound)
+		}
+		return nil, fmt.Errorf("query refresh token: %w", err)
+	}
+	return &RefreshTokenRecord{
+		ID:        rt.ID,
+		UserID:    rt.UserID,
+		TokenHash: rt.TokenHash,
+		ExpiresAt: rt.ExpiresAt,
+		CreatedAt: rt.CreatedAt,
+	}, nil
+}
+
+// RefreshTokenDeleteByID deletes a refresh token by ID.
+func (a *Adapter) RefreshTokenDeleteByID(ctx context.Context, id int) error {
+	err := a.client.RefreshToken.DeleteOneID(id).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("delete refresh token: %w", err)
+	}
+	return nil
+}
+
+// RefreshTokenDeleteExpired removes all expired refresh tokens.
+func (a *Adapter) RefreshTokenDeleteExpired(ctx context.Context) (int64, error) {
+	n, err := a.client.RefreshToken.Delete().
+		Where(refreshtoken.ExpiresAtLT(time.Now())).
+		Exec(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("delete expired refresh tokens: %w", err)
+	}
+	return int64(n), nil
 }
