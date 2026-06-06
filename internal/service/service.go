@@ -77,7 +77,8 @@ func NewAuthService(jwtSvc *jwt.TokenService, a *store.Adapter) *AuthService {
 }
 
 // IssueJWT issues a JWT token for the given service and scopes after validating the user's namespace access.
-func (s *AuthService) IssueJWT(ctx context.Context, service string, clientID string, rawScope string) (*jwt.TokenResponse, error) {
+// userID is the authenticated user (0 if unauthenticated).
+func (s *AuthService) IssueJWT(ctx context.Context, service string, clientID string, rawScope string, userID int) (*jwt.TokenResponse, error) {
 	scopes, err := ParseScopes(rawScope)
 	if err != nil {
 		return nil, fmt.Errorf("invalid scope: %w", err)
@@ -90,7 +91,7 @@ func (s *AuthService) IssueJWT(ctx context.Context, service string, clientID str
 			nsName = nsName[:idx]
 		}
 
-		_, err := s.store.NamespaceGetByName(ctx, nsName)
+		ns, err := s.store.NamespaceGetByName(ctx, nsName)
 		if err != nil {
 			if !errors.Is(err, store.ErrNotFound) {
 				slog.Error("auth: namespace lookup failed",
@@ -99,14 +100,33 @@ func (s *AuthService) IssueJWT(ctx context.Context, service string, clientID str
 				return nil, fmt.Errorf("%w: namespace %s: %w", ErrForbidden, nsName, err)
 			}
 
-			slog.Info("auth: auto-creating namespace for first publish",
-				"namespace", nsName, "client_id", clientID,
-			)
-			if _, err := s.store.NamespaceCreate(ctx, nsName, "user", 0); err != nil {
-				slog.Error("auth: failed to auto-create namespace",
-					"namespace", nsName, "error", err,
+			// Auto-create only if authenticated user
+			if userID != 0 {
+				slog.Info("auth: auto-creating namespace for first publish",
+					"namespace", nsName, "user_id", userID,
 				)
-				return nil, fmt.Errorf("%w: namespace %s: %w", ErrForbidden, nsName, err)
+				if _, err := s.store.NamespaceCreate(ctx, nsName, "user", userID); err != nil {
+					slog.Error("auth: failed to auto-create namespace",
+						"namespace", nsName, "error", err,
+					)
+					return nil, fmt.Errorf("%w: namespace %s: %w", ErrForbidden, nsName, err)
+				}
+			} else {
+				return nil, fmt.Errorf("%w: namespace %s does not exist", ErrForbidden, nsName)
+			}
+		} else {
+			// Verify ownership: userID must match namespace.userID for push actions
+			if ns.UserID != nil && *ns.UserID != userID {
+				hasPush := false
+				for _, action := range sc.Actions {
+					if action == "push" {
+						hasPush = true
+						break
+					}
+				}
+				if hasPush {
+					return nil, fmt.Errorf("%w: namespace %s is owned by another user", ErrForbidden, nsName)
+				}
 			}
 		}
 
