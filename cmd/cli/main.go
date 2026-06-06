@@ -18,9 +18,16 @@ func main() {
 		Long:  "Flowbot CLI for plugin management: publish, install, and search.",
 	}
 
-	rootCmd.AddCommand(publishCmd())
-	rootCmd.AddCommand(installCmd())
-	rootCmd.AddCommand(searchCmd())
+	pluginCmd := &cobra.Command{
+		Use:   "plugin",
+		Short: "Plugin management commands",
+		Long:  "Scaffold, publish, install, and search plugins.",
+	}
+	pluginCmd.AddCommand(initCmd())
+	pluginCmd.AddCommand(publishCmd())
+	pluginCmd.AddCommand(installCmd())
+	pluginCmd.AddCommand(searchCmd())
+	rootCmd.AddCommand(pluginCmd)
 
 	if err := rootCmd.Execute(); err != nil {
 		slog.Error("command failed", "error", err)
