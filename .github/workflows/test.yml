@@ -1,0 +1,73 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - '*'
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: flowbot
+          POSTGRES_PASSWORD: flowbot
+          POSTGRES_DB: flowbot_registry
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '^1.26'
+          cache: true
+
+      - name: Go mod download
+        run: go mod download
+
+      - name: Test
+        run: go tool task test
+        env:
+          DATABASE_DSN: postgres://flowbot:flowbot@localhost:5432/flowbot_registry?sslmode=disable
+
+  race:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: flowbot
+          POSTGRES_PASSWORD: flowbot
+          POSTGRES_DB: flowbot_registry
+        ports:
+          - 5432:5432
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '^1.26'
+          cache: true
+
+      - name: Go mod download
+        run: go mod download
+
+      - name: Race testing
+        run: go tool task test:race
+        env:
+          DATABASE_DSN: postgres://flowbot:flowbot@localhost:5432/flowbot_registry?sslmode=disable

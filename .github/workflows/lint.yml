@@ -1,0 +1,32 @@
+name: Lint
+
+on:
+  push:
+    branches:
+      - '*'
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: '^1.26'
+          cache: true
+
+      - name: Go mod download
+        run: go mod download
+
+      - name: Lint
+        run: go tool task lint

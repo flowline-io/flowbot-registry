@@ -1,0 +1,112 @@
+version: "3"
+tasks:
+  default:
+    desc: Default task - run common checks
+    cmds:
+      - task: tidy
+      - task: format
+      - task: lint
+      - echo "All checks completed"
+
+  check:
+    desc: Run all security and quality checks
+    cmds:
+      - task: lint
+      - task: gosec
+      - task: leak
+      - echo "All checks completed"
+
+  build:
+    desc: Build flowbot-registry server
+    cmds:
+      - go build -v -o bin/flowbot-registry ./cmd/server
+
+  build:cli:
+    desc: Build flowbot CLI
+    cmds:
+      - go build -v -o bin/flowbot ./cmd/cli
+
+  build:all:
+    desc: Build all binaries
+    cmds:
+      - task: build
+      - task: build:cli
+
+  run:
+    desc: Run flowbot-registry server
+    cmds:
+      - go run ./cmd/server
+
+  run:cli:
+    desc: Run flowbot CLI (task run:cli -- publish)
+    cmds:
+      - go run ./cmd/cli {{.CLI_ARGS}}
+
+  lint:
+    desc: Run static code analysis
+    cmds:
+      - go tool revive -config revive.toml -formatter friendly ./...
+      - task: lint:testify
+      - task: lint:action
+
+  lint:action:
+    desc: Lint GitHub Actions workflow files
+    cmds:
+      - go tool actionlint
+
+  lint:testify:
+    desc: Lint usage of testify
+    cmds:
+      - go tool testifylint ./...
+
+  format:
+    desc: Format code
+    cmds:
+      - go fmt ./...
+
+  tidy:
+    desc: Clean up Go module dependencies
+    cmds:
+      - go mod tidy
+
+  gosec:
+    desc: Run Go security checker
+    cmds:
+      - go tool gosec ./...
+
+  leak:
+    desc: Find secrets with Gitleaks
+    cmds:
+      - go tool gitleaks git -v
+
+  test:
+    desc: Run all tests
+    cmds:
+      - go tool gotestsum --hide-summary=skipped --packages="./..."
+
+  test:short:
+    desc: Run tests in short mode
+    cmds:
+      - go test -short ./...
+
+  test:race:
+    desc: Race testing
+    cmds:
+      - go test -count=10 -race ./...
+
+  test:coverage:
+    desc: Run tests with coverage report
+    cmds:
+      - go test ./... -coverprofile=coverage.out -covermode=atomic
+      - go tool cover -html=coverage.out -o coverage.html
+      - echo "coverage report generated in coverage.html"
+
+  ent:
+    desc: Generate ent code from database
+    cmds:
+      - go generate ./internal/ent/
+
+  tools:
+    desc: Install all development tools
+    cmds:
+      - go mod download
