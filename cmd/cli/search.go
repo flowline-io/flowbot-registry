@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -142,4 +143,34 @@ func doJSONGet[T any](apiURL string) (*T, error) {
 	}
 
 	return &result, nil
+}
+
+// doJSONPost performs a POST request with a JSON body and optional API key auth.
+func doJSONPost(apiURL string, body any, apiKey string) (*http.Response, error) {
+	bodyBytes, err := json.Marshal(body)
+	if err != nil {
+		return nil, fmt.Errorf("marshal body: %w", err)
+	}
+
+	req, err := http.NewRequest(http.MethodPost, apiURL, bytes.NewReader(bodyBytes))
+	if err != nil {
+		return nil, fmt.Errorf("create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	if apiKey != "" {
+		req.Header.Set("Authorization", "Bearer "+apiKey)
+	}
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("http request: %w", err)
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		body, _ := io.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		return resp, fmt.Errorf("store API returned %d: %s", resp.StatusCode, string(body))
+	}
+
+	return resp, nil
 }

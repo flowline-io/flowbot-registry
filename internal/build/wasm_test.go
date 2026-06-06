@@ -3,6 +3,7 @@ package build
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -12,6 +13,10 @@ import (
 )
 
 func TestWasmBuilderBuild(t *testing.T) {
+	if _, err := exec.LookPath("tinygo"); err != nil {
+		t.Skip("tinygo not available in PATH")
+	}
+
 	m := &manifest.Manifest{
 		Name:    "community/my-wasm",
 		Version: "1.0.0",
