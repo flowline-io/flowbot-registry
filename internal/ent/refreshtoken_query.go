@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/flowline-io/flowbot-registry/internal/ent/predicate"
 	"github.com/flowline-io/flowbot-registry/internal/ent/refreshtoken"
+	"github.com/flowline-io/flowbot-registry/internal/ent/user"
 )
 
 // RefreshTokenQuery is the builder for querying RefreshToken entities.
@@ -22,7 +23,7 @@ type RefreshTokenQuery struct {
 	order      []refreshtoken.OrderOption
 	inters     []Interceptor
 	predicates []predicate.RefreshToken
-	withFKs    bool
+	withUser   *UserQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -57,6 +58,28 @@ func (_q *RefreshTokenQuery) Unique(unique bool) *RefreshTokenQuery {
 func (_q *RefreshTokenQuery) Order(o ...refreshtoken.OrderOption) *RefreshTokenQuery {
 	_q.order = append(_q.order, o...)
 	return _q
+}
+
+// QueryUser chains the current query on the "user" edge.
+func (_q *RefreshTokenQuery) QueryUser() *UserQuery {
+	query := (&UserClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(refreshtoken.Table, refreshtoken.FieldID, selector),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, refreshtoken.UserTable, refreshtoken.UserColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first RefreshToken entity from the query.
@@ -251,10 +274,22 @@ func (_q *RefreshTokenQuery) Clone() *RefreshTokenQuery {
 		order:      append([]refreshtoken.OrderOption{}, _q.order...),
 		inters:     append([]Interceptor{}, _q.inters...),
 		predicates: append([]predicate.RefreshToken{}, _q.predicates...),
+		withUser:   _q.withUser.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
 	}
+}
+
+// WithUser tells the query-builder to eager-load the nodes that are connected to
+// the "user" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RefreshTokenQuery) WithUser(opts ...func(*UserQuery)) *RefreshTokenQuery {
+	query := (&UserClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withUser = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -263,12 +298,12 @@ func (_q *RefreshTokenQuery) Clone() *RefreshTokenQuery {
 // Example:
 //
 //	var v []struct {
-//		Token string `json:"token,omitempty"`
+//		UserID int `json:"user_id,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.RefreshToken.Query().
-//		GroupBy(refreshtoken.FieldToken).
+//		GroupBy(refreshtoken.FieldUserID).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (_q *RefreshTokenQuery) GroupBy(field string, fields ...string) *RefreshTokenGroupBy {
@@ -286,11 +321,11 @@ func (_q *RefreshTokenQuery) GroupBy(field string, fields ...string) *RefreshTok
 // Example:
 //
 //	var v []struct {
-//		Token string `json:"token,omitempty"`
+//		UserID int `json:"user_id,omitempty"`
 //	}
 //
 //	client.RefreshToken.Query().
-//		Select(refreshtoken.FieldToken).
+//		Select(refreshtoken.FieldUserID).
 //		Scan(ctx, &v)
 func (_q *RefreshTokenQuery) Select(fields ...string) *RefreshTokenSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)
@@ -333,19 +368,19 @@ func (_q *RefreshTokenQuery) prepareQuery(ctx context.Context) error {
 
 func (_q *RefreshTokenQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*RefreshToken, error) {
 	var (
-		nodes   = []*RefreshToken{}
-		withFKs = _q.withFKs
-		_spec   = _q.querySpec()
+		nodes       = []*RefreshToken{}
+		_spec       = _q.querySpec()
+		loadedTypes = [1]bool{
+			_q.withUser != nil,
+		}
 	)
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, refreshtoken.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*RefreshToken).scanValues(nil, columns)
 	}
 	_spec.Assign = func(columns []string, values []any) error {
 		node := &RefreshToken{config: _q.config}
 		nodes = append(nodes, node)
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	for i := range hooks {
@@ -357,7 +392,43 @@ func (_q *RefreshTokenQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := _q.withUser; query != nil {
+		if err := _q.loadUser(ctx, query, nodes, nil,
+			func(n *RefreshToken, e *User) { n.Edges.User = e }); err != nil {
+			return nil, err
+		}
+	}
 	return nodes, nil
+}
+
+func (_q *RefreshTokenQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*RefreshToken, init func(*RefreshToken), assign func(*RefreshToken, *User)) error {
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*RefreshToken)
+	for i := range nodes {
+		fk := nodes[i].UserID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(user.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "user_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
 }
 
 func (_q *RefreshTokenQuery) sqlCount(ctx context.Context) (int, error) {
@@ -384,6 +455,9 @@ func (_q *RefreshTokenQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != refreshtoken.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if _q.withUser != nil {
+			_spec.Node.AddColumnOnce(refreshtoken.FieldUserID)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {

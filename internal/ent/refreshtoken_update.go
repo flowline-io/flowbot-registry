@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/flowline-io/flowbot-registry/internal/ent/predicate"
 	"github.com/flowline-io/flowbot-registry/internal/ent/refreshtoken"
+	"github.com/flowline-io/flowbot-registry/internal/ent/user"
 )
 
 // RefreshTokenUpdate is the builder for updating RefreshToken entities.
@@ -28,16 +29,30 @@ func (_u *RefreshTokenUpdate) Where(ps ...predicate.RefreshToken) *RefreshTokenU
 	return _u
 }
 
-// SetToken sets the "token" field.
-func (_u *RefreshTokenUpdate) SetToken(v string) *RefreshTokenUpdate {
-	_u.mutation.SetToken(v)
+// SetUserID sets the "user_id" field.
+func (_u *RefreshTokenUpdate) SetUserID(v int) *RefreshTokenUpdate {
+	_u.mutation.SetUserID(v)
 	return _u
 }
 
-// SetNillableToken sets the "token" field if the given value is not nil.
-func (_u *RefreshTokenUpdate) SetNillableToken(v *string) *RefreshTokenUpdate {
+// SetNillableUserID sets the "user_id" field if the given value is not nil.
+func (_u *RefreshTokenUpdate) SetNillableUserID(v *int) *RefreshTokenUpdate {
 	if v != nil {
-		_u.SetToken(*v)
+		_u.SetUserID(*v)
+	}
+	return _u
+}
+
+// SetTokenHash sets the "token_hash" field.
+func (_u *RefreshTokenUpdate) SetTokenHash(v string) *RefreshTokenUpdate {
+	_u.mutation.SetTokenHash(v)
+	return _u
+}
+
+// SetNillableTokenHash sets the "token_hash" field if the given value is not nil.
+func (_u *RefreshTokenUpdate) SetNillableTokenHash(v *string) *RefreshTokenUpdate {
+	if v != nil {
+		_u.SetTokenHash(*v)
 	}
 	return _u
 }
@@ -56,9 +71,20 @@ func (_u *RefreshTokenUpdate) SetNillableExpiresAt(v *time.Time) *RefreshTokenUp
 	return _u
 }
 
+// SetUser sets the "user" edge to the User entity.
+func (_u *RefreshTokenUpdate) SetUser(v *User) *RefreshTokenUpdate {
+	return _u.SetUserID(v.ID)
+}
+
 // Mutation returns the RefreshTokenMutation object of the builder.
 func (_u *RefreshTokenUpdate) Mutation() *RefreshTokenMutation {
 	return _u.mutation
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (_u *RefreshTokenUpdate) ClearUser() *RefreshTokenUpdate {
+	_u.mutation.ClearUser()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -90,10 +116,13 @@ func (_u *RefreshTokenUpdate) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *RefreshTokenUpdate) check() error {
-	if v, ok := _u.mutation.Token(); ok {
-		if err := refreshtoken.TokenValidator(v); err != nil {
-			return &ValidationError{Name: "token", err: fmt.Errorf(`ent: validator failed for field "RefreshToken.token": %w`, err)}
+	if v, ok := _u.mutation.TokenHash(); ok {
+		if err := refreshtoken.TokenHashValidator(v); err != nil {
+			return &ValidationError{Name: "token_hash", err: fmt.Errorf(`ent: validator failed for field "RefreshToken.token_hash": %w`, err)}
 		}
+	}
+	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "RefreshToken.user"`)
 	}
 	return nil
 }
@@ -110,11 +139,40 @@ func (_u *RefreshTokenUpdate) sqlSave(ctx context.Context) (_node int, err error
 			}
 		}
 	}
-	if value, ok := _u.mutation.Token(); ok {
-		_spec.SetField(refreshtoken.FieldToken, field.TypeString, value)
+	if value, ok := _u.mutation.TokenHash(); ok {
+		_spec.SetField(refreshtoken.FieldTokenHash, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.ExpiresAt(); ok {
 		_spec.SetField(refreshtoken.FieldExpiresAt, field.TypeTime, value)
+	}
+	if _u.mutation.UserCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   refreshtoken.UserTable,
+			Columns: []string{refreshtoken.UserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   refreshtoken.UserTable,
+			Columns: []string{refreshtoken.UserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -136,16 +194,30 @@ type RefreshTokenUpdateOne struct {
 	mutation *RefreshTokenMutation
 }
 
-// SetToken sets the "token" field.
-func (_u *RefreshTokenUpdateOne) SetToken(v string) *RefreshTokenUpdateOne {
-	_u.mutation.SetToken(v)
+// SetUserID sets the "user_id" field.
+func (_u *RefreshTokenUpdateOne) SetUserID(v int) *RefreshTokenUpdateOne {
+	_u.mutation.SetUserID(v)
 	return _u
 }
 
-// SetNillableToken sets the "token" field if the given value is not nil.
-func (_u *RefreshTokenUpdateOne) SetNillableToken(v *string) *RefreshTokenUpdateOne {
+// SetNillableUserID sets the "user_id" field if the given value is not nil.
+func (_u *RefreshTokenUpdateOne) SetNillableUserID(v *int) *RefreshTokenUpdateOne {
 	if v != nil {
-		_u.SetToken(*v)
+		_u.SetUserID(*v)
+	}
+	return _u
+}
+
+// SetTokenHash sets the "token_hash" field.
+func (_u *RefreshTokenUpdateOne) SetTokenHash(v string) *RefreshTokenUpdateOne {
+	_u.mutation.SetTokenHash(v)
+	return _u
+}
+
+// SetNillableTokenHash sets the "token_hash" field if the given value is not nil.
+func (_u *RefreshTokenUpdateOne) SetNillableTokenHash(v *string) *RefreshTokenUpdateOne {
+	if v != nil {
+		_u.SetTokenHash(*v)
 	}
 	return _u
 }
@@ -164,9 +236,20 @@ func (_u *RefreshTokenUpdateOne) SetNillableExpiresAt(v *time.Time) *RefreshToke
 	return _u
 }
 
+// SetUser sets the "user" edge to the User entity.
+func (_u *RefreshTokenUpdateOne) SetUser(v *User) *RefreshTokenUpdateOne {
+	return _u.SetUserID(v.ID)
+}
+
 // Mutation returns the RefreshTokenMutation object of the builder.
 func (_u *RefreshTokenUpdateOne) Mutation() *RefreshTokenMutation {
 	return _u.mutation
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (_u *RefreshTokenUpdateOne) ClearUser() *RefreshTokenUpdateOne {
+	_u.mutation.ClearUser()
+	return _u
 }
 
 // Where appends a list predicates to the RefreshTokenUpdate builder.
@@ -211,10 +294,13 @@ func (_u *RefreshTokenUpdateOne) ExecX(ctx context.Context) {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *RefreshTokenUpdateOne) check() error {
-	if v, ok := _u.mutation.Token(); ok {
-		if err := refreshtoken.TokenValidator(v); err != nil {
-			return &ValidationError{Name: "token", err: fmt.Errorf(`ent: validator failed for field "RefreshToken.token": %w`, err)}
+	if v, ok := _u.mutation.TokenHash(); ok {
+		if err := refreshtoken.TokenHashValidator(v); err != nil {
+			return &ValidationError{Name: "token_hash", err: fmt.Errorf(`ent: validator failed for field "RefreshToken.token_hash": %w`, err)}
 		}
+	}
+	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
+		return errors.New(`ent: clearing a required unique edge "RefreshToken.user"`)
 	}
 	return nil
 }
@@ -248,11 +334,40 @@ func (_u *RefreshTokenUpdateOne) sqlSave(ctx context.Context) (_node *RefreshTok
 			}
 		}
 	}
-	if value, ok := _u.mutation.Token(); ok {
-		_spec.SetField(refreshtoken.FieldToken, field.TypeString, value)
+	if value, ok := _u.mutation.TokenHash(); ok {
+		_spec.SetField(refreshtoken.FieldTokenHash, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.ExpiresAt(); ok {
 		_spec.SetField(refreshtoken.FieldExpiresAt, field.TypeTime, value)
+	}
+	if _u.mutation.UserCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   refreshtoken.UserTable,
+			Columns: []string{refreshtoken.UserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   refreshtoken.UserTable,
+			Columns: []string{refreshtoken.UserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &RefreshToken{config: _u.config}
 	_spec.Assign = _node.assignValues

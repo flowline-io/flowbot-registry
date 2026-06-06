@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/flowline-io/flowbot-registry/internal/ent/refreshtoken"
+	"github.com/flowline-io/flowbot-registry/internal/ent/user"
 )
 
 // RefreshToken is the model entity for the RefreshToken schema.
@@ -17,14 +18,38 @@ type RefreshToken struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
-	// Token holds the value of the "token" field.
-	Token string `json:"token,omitempty"`
+	// UserID holds the value of the "user_id" field.
+	UserID int `json:"user_id,omitempty"`
+	// TokenHash holds the value of the "token_hash" field.
+	TokenHash string `json:"-"`
 	// ExpiresAt holds the value of the "expires_at" field.
 	ExpiresAt time.Time `json:"expires_at,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
-	CreatedAt           time.Time `json:"created_at,omitempty"`
-	user_refresh_tokens *int
-	selectValues        sql.SelectValues
+	CreatedAt time.Time `json:"created_at,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the RefreshTokenQuery when eager-loading is set.
+	Edges        RefreshTokenEdges `json:"edges"`
+	selectValues sql.SelectValues
+}
+
+// RefreshTokenEdges holds the relations/edges for other nodes in the graph.
+type RefreshTokenEdges struct {
+	// User holds the value of the user edge.
+	User *User `json:"user,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [1]bool
+}
+
+// UserOrErr returns the User value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e RefreshTokenEdges) UserOrErr() (*User, error) {
+	if e.User != nil {
+		return e.User, nil
+	} else if e.loadedTypes[0] {
+		return nil, &NotFoundError{label: user.Label}
+	}
+	return nil, &NotLoadedError{edge: "user"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -32,14 +57,12 @@ func (*RefreshToken) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case refreshtoken.FieldID:
+		case refreshtoken.FieldID, refreshtoken.FieldUserID:
 			values[i] = new(sql.NullInt64)
-		case refreshtoken.FieldToken:
+		case refreshtoken.FieldTokenHash:
 			values[i] = new(sql.NullString)
 		case refreshtoken.FieldExpiresAt, refreshtoken.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
-		case refreshtoken.ForeignKeys[0]: // user_refresh_tokens
-			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -61,11 +84,17 @@ func (_m *RefreshToken) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			_m.ID = int(value.Int64)
-		case refreshtoken.FieldToken:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field token", values[i])
+		case refreshtoken.FieldUserID:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field user_id", values[i])
 			} else if value.Valid {
-				_m.Token = value.String
+				_m.UserID = int(value.Int64)
+			}
+		case refreshtoken.FieldTokenHash:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field token_hash", values[i])
+			} else if value.Valid {
+				_m.TokenHash = value.String
 			}
 		case refreshtoken.FieldExpiresAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -79,13 +108,6 @@ func (_m *RefreshToken) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.CreatedAt = value.Time
 			}
-		case refreshtoken.ForeignKeys[0]:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field user_refresh_tokens", value)
-			} else if value.Valid {
-				_m.user_refresh_tokens = new(int)
-				*_m.user_refresh_tokens = int(value.Int64)
-			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -97,6 +119,11 @@ func (_m *RefreshToken) assignValues(columns []string, values []any) error {
 // This includes values selected through modifiers, order, etc.
 func (_m *RefreshToken) Value(name string) (ent.Value, error) {
 	return _m.selectValues.Get(name)
+}
+
+// QueryUser queries the "user" edge of the RefreshToken entity.
+func (_m *RefreshToken) QueryUser() *UserQuery {
+	return NewRefreshTokenClient(_m.config).QueryUser(_m)
 }
 
 // Update returns a builder for updating this RefreshToken.
@@ -122,8 +149,10 @@ func (_m *RefreshToken) String() string {
 	var builder strings.Builder
 	builder.WriteString("RefreshToken(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
-	builder.WriteString("token=")
-	builder.WriteString(_m.Token)
+	builder.WriteString("user_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.UserID))
+	builder.WriteString(", ")
+	builder.WriteString("token_hash=<sensitive>")
 	builder.WriteString(", ")
 	builder.WriteString("expires_at=")
 	builder.WriteString(_m.ExpiresAt.Format(time.ANSIC))

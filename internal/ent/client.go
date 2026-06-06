@@ -792,6 +792,22 @@ func (c *RefreshTokenClient) GetX(ctx context.Context, id int) *RefreshToken {
 	return obj
 }
 
+// QueryUser queries the user edge of a RefreshToken.
+func (c *RefreshTokenClient) QueryUser(_m *RefreshToken) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(refreshtoken.Table, refreshtoken.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, refreshtoken.UserTable, refreshtoken.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *RefreshTokenClient) Hooks() []Hook {
 	return c.hooks.RefreshToken

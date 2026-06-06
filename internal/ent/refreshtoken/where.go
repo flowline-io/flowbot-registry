@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/flowline-io/flowbot-registry/internal/ent/predicate"
 )
 
@@ -54,9 +55,14 @@ func IDLTE(id int) predicate.RefreshToken {
 	return predicate.RefreshToken(sql.FieldLTE(FieldID, id))
 }
 
-// Token applies equality check predicate on the "token" field. It's identical to TokenEQ.
-func Token(v string) predicate.RefreshToken {
-	return predicate.RefreshToken(sql.FieldEQ(FieldToken, v))
+// UserID applies equality check predicate on the "user_id" field. It's identical to UserIDEQ.
+func UserID(v int) predicate.RefreshToken {
+	return predicate.RefreshToken(sql.FieldEQ(FieldUserID, v))
+}
+
+// TokenHash applies equality check predicate on the "token_hash" field. It's identical to TokenHashEQ.
+func TokenHash(v string) predicate.RefreshToken {
+	return predicate.RefreshToken(sql.FieldEQ(FieldTokenHash, v))
 }
 
 // ExpiresAt applies equality check predicate on the "expires_at" field. It's identical to ExpiresAtEQ.
@@ -69,69 +75,89 @@ func CreatedAt(v time.Time) predicate.RefreshToken {
 	return predicate.RefreshToken(sql.FieldEQ(FieldCreatedAt, v))
 }
 
-// TokenEQ applies the EQ predicate on the "token" field.
-func TokenEQ(v string) predicate.RefreshToken {
-	return predicate.RefreshToken(sql.FieldEQ(FieldToken, v))
+// UserIDEQ applies the EQ predicate on the "user_id" field.
+func UserIDEQ(v int) predicate.RefreshToken {
+	return predicate.RefreshToken(sql.FieldEQ(FieldUserID, v))
 }
 
-// TokenNEQ applies the NEQ predicate on the "token" field.
-func TokenNEQ(v string) predicate.RefreshToken {
-	return predicate.RefreshToken(sql.FieldNEQ(FieldToken, v))
+// UserIDNEQ applies the NEQ predicate on the "user_id" field.
+func UserIDNEQ(v int) predicate.RefreshToken {
+	return predicate.RefreshToken(sql.FieldNEQ(FieldUserID, v))
 }
 
-// TokenIn applies the In predicate on the "token" field.
-func TokenIn(vs ...string) predicate.RefreshToken {
-	return predicate.RefreshToken(sql.FieldIn(FieldToken, vs...))
+// UserIDIn applies the In predicate on the "user_id" field.
+func UserIDIn(vs ...int) predicate.RefreshToken {
+	return predicate.RefreshToken(sql.FieldIn(FieldUserID, vs...))
 }
 
-// TokenNotIn applies the NotIn predicate on the "token" field.
-func TokenNotIn(vs ...string) predicate.RefreshToken {
-	return predicate.RefreshToken(sql.FieldNotIn(FieldToken, vs...))
+// UserIDNotIn applies the NotIn predicate on the "user_id" field.
+func UserIDNotIn(vs ...int) predicate.RefreshToken {
+	return predicate.RefreshToken(sql.FieldNotIn(FieldUserID, vs...))
 }
 
-// TokenGT applies the GT predicate on the "token" field.
-func TokenGT(v string) predicate.RefreshToken {
-	return predicate.RefreshToken(sql.FieldGT(FieldToken, v))
+// TokenHashEQ applies the EQ predicate on the "token_hash" field.
+func TokenHashEQ(v string) predicate.RefreshToken {
+	return predicate.RefreshToken(sql.FieldEQ(FieldTokenHash, v))
 }
 
-// TokenGTE applies the GTE predicate on the "token" field.
-func TokenGTE(v string) predicate.RefreshToken {
-	return predicate.RefreshToken(sql.FieldGTE(FieldToken, v))
+// TokenHashNEQ applies the NEQ predicate on the "token_hash" field.
+func TokenHashNEQ(v string) predicate.RefreshToken {
+	return predicate.RefreshToken(sql.FieldNEQ(FieldTokenHash, v))
 }
 
-// TokenLT applies the LT predicate on the "token" field.
-func TokenLT(v string) predicate.RefreshToken {
-	return predicate.RefreshToken(sql.FieldLT(FieldToken, v))
+// TokenHashIn applies the In predicate on the "token_hash" field.
+func TokenHashIn(vs ...string) predicate.RefreshToken {
+	return predicate.RefreshToken(sql.FieldIn(FieldTokenHash, vs...))
 }
 
-// TokenLTE applies the LTE predicate on the "token" field.
-func TokenLTE(v string) predicate.RefreshToken {
-	return predicate.RefreshToken(sql.FieldLTE(FieldToken, v))
+// TokenHashNotIn applies the NotIn predicate on the "token_hash" field.
+func TokenHashNotIn(vs ...string) predicate.RefreshToken {
+	return predicate.RefreshToken(sql.FieldNotIn(FieldTokenHash, vs...))
 }
 
-// TokenContains applies the Contains predicate on the "token" field.
-func TokenContains(v string) predicate.RefreshToken {
-	return predicate.RefreshToken(sql.FieldContains(FieldToken, v))
+// TokenHashGT applies the GT predicate on the "token_hash" field.
+func TokenHashGT(v string) predicate.RefreshToken {
+	return predicate.RefreshToken(sql.FieldGT(FieldTokenHash, v))
 }
 
-// TokenHasPrefix applies the HasPrefix predicate on the "token" field.
-func TokenHasPrefix(v string) predicate.RefreshToken {
-	return predicate.RefreshToken(sql.FieldHasPrefix(FieldToken, v))
+// TokenHashGTE applies the GTE predicate on the "token_hash" field.
+func TokenHashGTE(v string) predicate.RefreshToken {
+	return predicate.RefreshToken(sql.FieldGTE(FieldTokenHash, v))
 }
 
-// TokenHasSuffix applies the HasSuffix predicate on the "token" field.
-func TokenHasSuffix(v string) predicate.RefreshToken {
-	return predicate.RefreshToken(sql.FieldHasSuffix(FieldToken, v))
+// TokenHashLT applies the LT predicate on the "token_hash" field.
+func TokenHashLT(v string) predicate.RefreshToken {
+	return predicate.RefreshToken(sql.FieldLT(FieldTokenHash, v))
 }
 
-// TokenEqualFold applies the EqualFold predicate on the "token" field.
-func TokenEqualFold(v string) predicate.RefreshToken {
-	return predicate.RefreshToken(sql.FieldEqualFold(FieldToken, v))
+// TokenHashLTE applies the LTE predicate on the "token_hash" field.
+func TokenHashLTE(v string) predicate.RefreshToken {
+	return predicate.RefreshToken(sql.FieldLTE(FieldTokenHash, v))
 }
 
-// TokenContainsFold applies the ContainsFold predicate on the "token" field.
-func TokenContainsFold(v string) predicate.RefreshToken {
-	return predicate.RefreshToken(sql.FieldContainsFold(FieldToken, v))
+// TokenHashContains applies the Contains predicate on the "token_hash" field.
+func TokenHashContains(v string) predicate.RefreshToken {
+	return predicate.RefreshToken(sql.FieldContains(FieldTokenHash, v))
+}
+
+// TokenHashHasPrefix applies the HasPrefix predicate on the "token_hash" field.
+func TokenHashHasPrefix(v string) predicate.RefreshToken {
+	return predicate.RefreshToken(sql.FieldHasPrefix(FieldTokenHash, v))
+}
+
+// TokenHashHasSuffix applies the HasSuffix predicate on the "token_hash" field.
+func TokenHashHasSuffix(v string) predicate.RefreshToken {
+	return predicate.RefreshToken(sql.FieldHasSuffix(FieldTokenHash, v))
+}
+
+// TokenHashEqualFold applies the EqualFold predicate on the "token_hash" field.
+func TokenHashEqualFold(v string) predicate.RefreshToken {
+	return predicate.RefreshToken(sql.FieldEqualFold(FieldTokenHash, v))
+}
+
+// TokenHashContainsFold applies the ContainsFold predicate on the "token_hash" field.
+func TokenHashContainsFold(v string) predicate.RefreshToken {
+	return predicate.RefreshToken(sql.FieldContainsFold(FieldTokenHash, v))
 }
 
 // ExpiresAtEQ applies the EQ predicate on the "expires_at" field.
@@ -212,6 +238,29 @@ func CreatedAtLT(v time.Time) predicate.RefreshToken {
 // CreatedAtLTE applies the LTE predicate on the "created_at" field.
 func CreatedAtLTE(v time.Time) predicate.RefreshToken {
 	return predicate.RefreshToken(sql.FieldLTE(FieldCreatedAt, v))
+}
+
+// HasUser applies the HasEdge predicate on the "user" edge.
+func HasUser() predicate.RefreshToken {
+	return predicate.RefreshToken(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasUserWith applies the HasEdge predicate on the "user" edge with a given conditions (other predicates).
+func HasUserWith(preds ...predicate.User) predicate.RefreshToken {
+	return predicate.RefreshToken(func(s *sql.Selector) {
+		step := newUserStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
 }
 
 // And groups predicates with the AND operator between them.

@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/flowline-io/flowbot-registry/internal/ent/refreshtoken"
+	"github.com/flowline-io/flowbot-registry/internal/ent/user"
 )
 
 // RefreshTokenCreate is the builder for creating a RefreshToken entity.
@@ -20,9 +21,15 @@ type RefreshTokenCreate struct {
 	hooks    []Hook
 }
 
-// SetToken sets the "token" field.
-func (_c *RefreshTokenCreate) SetToken(v string) *RefreshTokenCreate {
-	_c.mutation.SetToken(v)
+// SetUserID sets the "user_id" field.
+func (_c *RefreshTokenCreate) SetUserID(v int) *RefreshTokenCreate {
+	_c.mutation.SetUserID(v)
+	return _c
+}
+
+// SetTokenHash sets the "token_hash" field.
+func (_c *RefreshTokenCreate) SetTokenHash(v string) *RefreshTokenCreate {
+	_c.mutation.SetTokenHash(v)
 	return _c
 }
 
@@ -50,6 +57,11 @@ func (_c *RefreshTokenCreate) SetNillableCreatedAt(v *time.Time) *RefreshTokenCr
 func (_c *RefreshTokenCreate) SetID(v int) *RefreshTokenCreate {
 	_c.mutation.SetID(v)
 	return _c
+}
+
+// SetUser sets the "user" edge to the User entity.
+func (_c *RefreshTokenCreate) SetUser(v *User) *RefreshTokenCreate {
+	return _c.SetUserID(v.ID)
 }
 
 // Mutation returns the RefreshTokenMutation object of the builder.
@@ -95,12 +107,15 @@ func (_c *RefreshTokenCreate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (_c *RefreshTokenCreate) check() error {
-	if _, ok := _c.mutation.Token(); !ok {
-		return &ValidationError{Name: "token", err: errors.New(`ent: missing required field "RefreshToken.token"`)}
+	if _, ok := _c.mutation.UserID(); !ok {
+		return &ValidationError{Name: "user_id", err: errors.New(`ent: missing required field "RefreshToken.user_id"`)}
 	}
-	if v, ok := _c.mutation.Token(); ok {
-		if err := refreshtoken.TokenValidator(v); err != nil {
-			return &ValidationError{Name: "token", err: fmt.Errorf(`ent: validator failed for field "RefreshToken.token": %w`, err)}
+	if _, ok := _c.mutation.TokenHash(); !ok {
+		return &ValidationError{Name: "token_hash", err: errors.New(`ent: missing required field "RefreshToken.token_hash"`)}
+	}
+	if v, ok := _c.mutation.TokenHash(); ok {
+		if err := refreshtoken.TokenHashValidator(v); err != nil {
+			return &ValidationError{Name: "token_hash", err: fmt.Errorf(`ent: validator failed for field "RefreshToken.token_hash": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.ExpiresAt(); !ok {
@@ -108,6 +123,9 @@ func (_c *RefreshTokenCreate) check() error {
 	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "RefreshToken.created_at"`)}
+	}
+	if len(_c.mutation.UserIDs()) == 0 {
+		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "RefreshToken.user"`)}
 	}
 	return nil
 }
@@ -141,9 +159,9 @@ func (_c *RefreshTokenCreate) createSpec() (*RefreshToken, *sqlgraph.CreateSpec)
 		_node.ID = id
 		_spec.ID.Value = id
 	}
-	if value, ok := _c.mutation.Token(); ok {
-		_spec.SetField(refreshtoken.FieldToken, field.TypeString, value)
-		_node.Token = value
+	if value, ok := _c.mutation.TokenHash(); ok {
+		_spec.SetField(refreshtoken.FieldTokenHash, field.TypeString, value)
+		_node.TokenHash = value
 	}
 	if value, ok := _c.mutation.ExpiresAt(); ok {
 		_spec.SetField(refreshtoken.FieldExpiresAt, field.TypeTime, value)
@@ -152,6 +170,23 @@ func (_c *RefreshTokenCreate) createSpec() (*RefreshToken, *sqlgraph.CreateSpec)
 	if value, ok := _c.mutation.CreatedAt(); ok {
 		_spec.SetField(refreshtoken.FieldCreatedAt, field.TypeTime, value)
 		_node.CreatedAt = value
+	}
+	if nodes := _c.mutation.UserIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   refreshtoken.UserTable,
+			Columns: []string{refreshtoken.UserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.UserID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

@@ -34,7 +34,7 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "refreshtoken" package.
 	RefreshTokensInverseTable = "refresh_tokens"
 	// RefreshTokensColumn is the table column denoting the refresh_tokens relation/edge.
-	RefreshTokensColumn = "user_refresh_tokens"
+	RefreshTokensColumn = "user_id"
 	// NamespacesTable is the table that holds the namespaces relation/edge.
 	NamespacesTable = "namespaces"
 	// NamespacesInverseTable is the table name for the Namespace entity.

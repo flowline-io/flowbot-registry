@@ -69,12 +69,12 @@ func init() {
 	pluginversion.DefaultManifestJSON = pluginversionDescManifestJSON.Default.(map[string]interface{})
 	refreshtokenFields := schema.RefreshToken{}.Fields()
 	_ = refreshtokenFields
-	// refreshtokenDescToken is the schema descriptor for token field.
-	refreshtokenDescToken := refreshtokenFields[1].Descriptor()
-	// refreshtoken.TokenValidator is a validator for the "token" field. It is called by the builders before save.
-	refreshtoken.TokenValidator = refreshtokenDescToken.Validators[0].(func(string) error)
+	// refreshtokenDescTokenHash is the schema descriptor for token_hash field.
+	refreshtokenDescTokenHash := refreshtokenFields[2].Descriptor()
+	// refreshtoken.TokenHashValidator is a validator for the "token_hash" field. It is called by the builders before save.
+	refreshtoken.TokenHashValidator = refreshtokenDescTokenHash.Validators[0].(func(string) error)
 	// refreshtokenDescCreatedAt is the schema descriptor for created_at field.
-	refreshtokenDescCreatedAt := refreshtokenFields[3].Descriptor()
+	refreshtokenDescCreatedAt := refreshtokenFields[4].Descriptor()
 	// refreshtoken.DefaultCreatedAt holds the default value on creation for the created_at field.
 	refreshtoken.DefaultCreatedAt = refreshtokenDescCreatedAt.Default.(func() time.Time)
 	userFields := schema.User{}.Fields()

@@ -94,10 +94,10 @@ var (
 	// RefreshTokensColumns holds the columns for the "refresh_tokens" table.
 	RefreshTokensColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
-		{Name: "token", Type: field.TypeString, Unique: true},
+		{Name: "token_hash", Type: field.TypeString, Unique: true},
 		{Name: "expires_at", Type: field.TypeTime},
 		{Name: "created_at", Type: field.TypeTime},
-		{Name: "user_refresh_tokens", Type: field.TypeInt, Nullable: true},
+		{Name: "user_id", Type: field.TypeInt},
 	}
 	// RefreshTokensTable holds the schema information for the "refresh_tokens" table.
 	RefreshTokensTable = &schema.Table{
@@ -109,7 +109,7 @@ var (
 				Symbol:     "refresh_tokens_users_refresh_tokens",
 				Columns:    []*schema.Column{RefreshTokensColumns[4]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.NoAction,
 			},
 		},
 	}

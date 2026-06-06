@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 const (
@@ -13,28 +14,34 @@ const (
 	Label = "refresh_token"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldToken holds the string denoting the token field in the database.
-	FieldToken = "token"
+	// FieldUserID holds the string denoting the user_id field in the database.
+	FieldUserID = "user_id"
+	// FieldTokenHash holds the string denoting the token_hash field in the database.
+	FieldTokenHash = "token_hash"
 	// FieldExpiresAt holds the string denoting the expires_at field in the database.
 	FieldExpiresAt = "expires_at"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
+	// EdgeUser holds the string denoting the user edge name in mutations.
+	EdgeUser = "user"
 	// Table holds the table name of the refreshtoken in the database.
 	Table = "refresh_tokens"
+	// UserTable is the table that holds the user relation/edge.
+	UserTable = "refresh_tokens"
+	// UserInverseTable is the table name for the User entity.
+	// It exists in this package in order to avoid circular dependency with the "user" package.
+	UserInverseTable = "users"
+	// UserColumn is the table column denoting the user relation/edge.
+	UserColumn = "user_id"
 )
 
 // Columns holds all SQL columns for refreshtoken fields.
 var Columns = []string{
 	FieldID,
-	FieldToken,
+	FieldUserID,
+	FieldTokenHash,
 	FieldExpiresAt,
 	FieldCreatedAt,
-}
-
-// ForeignKeys holds the SQL foreign-keys that are owned by the "refresh_tokens"
-// table and are not defined as standalone fields in the schema.
-var ForeignKeys = []string{
-	"user_refresh_tokens",
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -44,17 +51,12 @@ func ValidColumn(column string) bool {
 			return true
 		}
 	}
-	for i := range ForeignKeys {
-		if column == ForeignKeys[i] {
-			return true
-		}
-	}
 	return false
 }
 
 var (
-	// TokenValidator is a validator for the "token" field. It is called by the builders before save.
-	TokenValidator func(string) error
+	// TokenHashValidator is a validator for the "token_hash" field. It is called by the builders before save.
+	TokenHashValidator func(string) error
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 )
@@ -67,9 +69,14 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
 }
 
-// ByToken orders the results by the token field.
-func ByToken(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldToken, opts...).ToFunc()
+// ByUserID orders the results by the user_id field.
+func ByUserID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldUserID, opts...).ToFunc()
+}
+
+// ByTokenHash orders the results by the token_hash field.
+func ByTokenHash(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTokenHash, opts...).ToFunc()
 }
 
 // ByExpiresAt orders the results by the expires_at field.
@@ -80,4 +87,18 @@ func ByExpiresAt(opts ...sql.OrderTermOption) OrderOption {
 // ByCreatedAt orders the results by the created_at field.
 func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCreatedAt, opts...).ToFunc()
+}
+
+// ByUserField orders the results by user field.
+func ByUserField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newUserStep(), sql.OrderByField(field, opts...))
+	}
+}
+func newUserStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(UserInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
+	)
 }

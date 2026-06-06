@@ -1856,10 +1856,12 @@ type RefreshTokenMutation struct {
 	op            Op
 	typ           string
 	id            *int
-	token         *string
+	token_hash    *string
 	expires_at    *time.Time
 	created_at    *time.Time
 	clearedFields map[string]struct{}
+	user          *int
+	cleareduser   bool
 	done          bool
 	oldValue      func(context.Context) (*RefreshToken, error)
 	predicates    []predicate.RefreshToken
@@ -1969,40 +1971,76 @@ func (m *RefreshTokenMutation) IDs(ctx context.Context) ([]int, error) {
 	}
 }
 
-// SetToken sets the "token" field.
-func (m *RefreshTokenMutation) SetToken(s string) {
-	m.token = &s
+// SetUserID sets the "user_id" field.
+func (m *RefreshTokenMutation) SetUserID(i int) {
+	m.user = &i
 }
 
-// Token returns the value of the "token" field in the mutation.
-func (m *RefreshTokenMutation) Token() (r string, exists bool) {
-	v := m.token
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *RefreshTokenMutation) UserID() (r int, exists bool) {
+	v := m.user
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldToken returns the old "token" field's value of the RefreshToken entity.
+// OldUserID returns the old "user_id" field's value of the RefreshToken entity.
 // If the RefreshToken object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RefreshTokenMutation) OldToken(ctx context.Context) (v string, err error) {
+func (m *RefreshTokenMutation) OldUserID(ctx context.Context) (v int, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldToken is only allowed on UpdateOne operations")
+		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldToken requires an ID field in the mutation")
+		return v, errors.New("OldUserID requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldToken: %w", err)
+		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
 	}
-	return oldValue.Token, nil
+	return oldValue.UserID, nil
 }
 
-// ResetToken resets all changes to the "token" field.
-func (m *RefreshTokenMutation) ResetToken() {
-	m.token = nil
+// ResetUserID resets all changes to the "user_id" field.
+func (m *RefreshTokenMutation) ResetUserID() {
+	m.user = nil
+}
+
+// SetTokenHash sets the "token_hash" field.
+func (m *RefreshTokenMutation) SetTokenHash(s string) {
+	m.token_hash = &s
+}
+
+// TokenHash returns the value of the "token_hash" field in the mutation.
+func (m *RefreshTokenMutation) TokenHash() (r string, exists bool) {
+	v := m.token_hash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTokenHash returns the old "token_hash" field's value of the RefreshToken entity.
+// If the RefreshToken object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RefreshTokenMutation) OldTokenHash(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTokenHash is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTokenHash requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTokenHash: %w", err)
+	}
+	return oldValue.TokenHash, nil
+}
+
+// ResetTokenHash resets all changes to the "token_hash" field.
+func (m *RefreshTokenMutation) ResetTokenHash() {
+	m.token_hash = nil
 }
 
 // SetExpiresAt sets the "expires_at" field.
@@ -2077,6 +2115,33 @@ func (m *RefreshTokenMutation) ResetCreatedAt() {
 	m.created_at = nil
 }
 
+// ClearUser clears the "user" edge to the User entity.
+func (m *RefreshTokenMutation) ClearUser() {
+	m.cleareduser = true
+	m.clearedFields[refreshtoken.FieldUserID] = struct{}{}
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *RefreshTokenMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *RefreshTokenMutation) UserIDs() (ids []int) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *RefreshTokenMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
 // Where appends a list predicates to the RefreshTokenMutation builder.
 func (m *RefreshTokenMutation) Where(ps ...predicate.RefreshToken) {
 	m.predicates = append(m.predicates, ps...)
@@ -2111,9 +2176,12 @@ func (m *RefreshTokenMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RefreshTokenMutation) Fields() []string {
-	fields := make([]string, 0, 3)
-	if m.token != nil {
-		fields = append(fields, refreshtoken.FieldToken)
+	fields := make([]string, 0, 4)
+	if m.user != nil {
+		fields = append(fields, refreshtoken.FieldUserID)
+	}
+	if m.token_hash != nil {
+		fields = append(fields, refreshtoken.FieldTokenHash)
 	}
 	if m.expires_at != nil {
 		fields = append(fields, refreshtoken.FieldExpiresAt)
@@ -2129,8 +2197,10 @@ func (m *RefreshTokenMutation) Fields() []string {
 // schema.
 func (m *RefreshTokenMutation) Field(name string) (ent.Value, bool) {
 	switch name {
-	case refreshtoken.FieldToken:
-		return m.Token()
+	case refreshtoken.FieldUserID:
+		return m.UserID()
+	case refreshtoken.FieldTokenHash:
+		return m.TokenHash()
 	case refreshtoken.FieldExpiresAt:
 		return m.ExpiresAt()
 	case refreshtoken.FieldCreatedAt:
@@ -2144,8 +2214,10 @@ func (m *RefreshTokenMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *RefreshTokenMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
-	case refreshtoken.FieldToken:
-		return m.OldToken(ctx)
+	case refreshtoken.FieldUserID:
+		return m.OldUserID(ctx)
+	case refreshtoken.FieldTokenHash:
+		return m.OldTokenHash(ctx)
 	case refreshtoken.FieldExpiresAt:
 		return m.OldExpiresAt(ctx)
 	case refreshtoken.FieldCreatedAt:
@@ -2159,12 +2231,19 @@ func (m *RefreshTokenMutation) OldField(ctx context.Context, name string) (ent.V
 // type.
 func (m *RefreshTokenMutation) SetField(name string, value ent.Value) error {
 	switch name {
-	case refreshtoken.FieldToken:
+	case refreshtoken.FieldUserID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
+		return nil
+	case refreshtoken.FieldTokenHash:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetToken(v)
+		m.SetTokenHash(v)
 		return nil
 	case refreshtoken.FieldExpiresAt:
 		v, ok := value.(time.Time)
@@ -2187,13 +2266,16 @@ func (m *RefreshTokenMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *RefreshTokenMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *RefreshTokenMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	}
 	return nil, false
 }
 
@@ -2229,8 +2311,11 @@ func (m *RefreshTokenMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *RefreshTokenMutation) ResetField(name string) error {
 	switch name {
-	case refreshtoken.FieldToken:
-		m.ResetToken()
+	case refreshtoken.FieldUserID:
+		m.ResetUserID()
+		return nil
+	case refreshtoken.FieldTokenHash:
+		m.ResetTokenHash()
 		return nil
 	case refreshtoken.FieldExpiresAt:
 		m.ResetExpiresAt()
@@ -2244,19 +2329,28 @@ func (m *RefreshTokenMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RefreshTokenMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.user != nil {
+		edges = append(edges, refreshtoken.EdgeUser)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *RefreshTokenMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case refreshtoken.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RefreshTokenMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
 	return edges
 }
 
@@ -2268,25 +2362,42 @@ func (m *RefreshTokenMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RefreshTokenMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.cleareduser {
+		edges = append(edges, refreshtoken.EdgeUser)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *RefreshTokenMutation) EdgeCleared(name string) bool {
+	switch name {
+	case refreshtoken.EdgeUser:
+		return m.cleareduser
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *RefreshTokenMutation) ClearEdge(name string) error {
+	switch name {
+	case refreshtoken.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
 	return fmt.Errorf("unknown RefreshToken unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *RefreshTokenMutation) ResetEdge(name string) error {
+	switch name {
+	case refreshtoken.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
 	return fmt.Errorf("unknown RefreshToken edge %s", name)
 }
 
