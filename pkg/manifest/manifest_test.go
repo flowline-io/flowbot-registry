@@ -9,11 +9,12 @@ import (
 
 func TestParseManifest(t *testing.T) {
 	tests := []struct {
-		name      string
-		input     []byte
-		wantError bool
-		wantName  string
-		wantVer   string
+		name        string
+		input       []byte
+		wantError   bool
+		errContains string
+		wantName    string
+		wantVer     string
 	}{
 		{
 			name: "valid manifest",
@@ -96,7 +97,8 @@ wasm:
 version: "1.0.0"
 runtime: invalid
 `),
-			wantError: true,
+			wantError:   true,
+			errContains: "unknown runtime",
 		},
 		{
 			name: "grpc runtime without grpc config",
@@ -104,7 +106,8 @@ runtime: invalid
 version: "1.0.0"
 runtime: grpc
 `),
-			wantError: true,
+			wantError:   true,
+			errContains: "grpc runtime requires grpc config",
 		},
 		{
 			name: "wasm runtime without wasm config",
@@ -112,7 +115,8 @@ runtime: grpc
 version: "1.0.0"
 runtime: wasm
 `),
-			wantError: true,
+			wantError:   true,
+			errContains: "wasm runtime requires wasm config",
 		},
 	}
 
@@ -122,11 +126,18 @@ runtime: wasm
 			if tt.wantError {
 				require.Error(t, err)
 				assert.Nil(t, m)
+				if tt.errContains != "" {
+					require.ErrorIs(t, err, ErrInvalidManifest)
+					assert.Contains(t, err.Error(), tt.errContains)
+				}
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, m)
 				assert.Equal(t, tt.wantName, m.Name)
 				assert.Equal(t, tt.wantVer, m.Version)
+				if tt.name == "valid grpc manifest with full schema" {
+					assert.NotEmpty(t, m.ConfigSchema)
+				}
 			}
 		})
 	}

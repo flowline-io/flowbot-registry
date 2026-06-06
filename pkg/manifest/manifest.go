@@ -3,6 +3,7 @@ package manifest
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/bytedance/sonic"
@@ -153,4 +154,4 @@ func (m *Manifest) validateRuntime() error {
 }
 
 // ErrInvalidManifest is returned when the manifest fails validation.
-var ErrInvalidManifest = fmt.Errorf("invalid manifest")
+var ErrInvalidManifest = errors.New("invalid manifest")
