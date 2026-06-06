@@ -88,6 +88,22 @@ func (a *Adapter) NamespaceGetByName(ctx context.Context, name string) (*Namespa
 	}, nil
 }
 
+// NamespaceGetByID retrieves a namespace by its ID.
+func (a *Adapter) NamespaceGetByID(ctx context.Context, id int) (*NamespaceRecord, error) {
+	n, err := a.client.Namespace.Get(ctx, id)
+	if err != nil {
+		if ent.IsNotFound(err) {
+			return nil, fmt.Errorf("%w: namespace id %d", ErrNotFound, id)
+		}
+		return nil, fmt.Errorf("get namespace by id: %w", err)
+	}
+	return &NamespaceRecord{
+		ID:   n.ID,
+		Name: n.Name,
+		Type: n.Type,
+	}, nil
+}
+
 // NamespaceCreate creates a new namespace.
 func (a *Adapter) NamespaceCreate(ctx context.Context, name string, nsType string) (*NamespaceRecord, error) {
 	n, err := a.client.Namespace.Create().
@@ -191,6 +207,24 @@ func (a *Adapter) PluginVersionUpdate(ctx context.Context, id int, ociRef string
 	return nil
 }
 
+// PluginVersionListByPlugin returns all versions for a plugin, newest first.
+func (a *Adapter) PluginVersionListByPlugin(ctx context.Context, pluginID int) ([]PluginVersionRecord, error) {
+	pvs, err := a.client.PluginVersion.Query().
+		Where(pluginversion.PluginIDEQ(pluginID)).
+		Order(ent.Desc(pluginversion.FieldID)).
+		All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list plugin versions: %w", err)
+	}
+
+	var records []PluginVersionRecord
+	for _, pv := range pvs {
+		records = append(records, *pluginVersionToRecord(pv))
+	}
+
+	return records, nil
+}
+
 // PluginList returns a paginated list of plugins matching the query.
 func (a *Adapter) PluginList(ctx context.Context, query string, limit int, offset int) ([]PluginRecord, int, error) {
 	q := a.client.Plugin.Query()
@@ -206,6 +240,38 @@ func (a *Adapter) PluginList(ctx context.Context, query string, limit int, offse
 	ps, err := q.Limit(limit).Offset(offset).All(ctx)
 	if err != nil {
 		return nil, 0, fmt.Errorf("list plugins: %w", err)
+	}
+
+	var records []PluginRecord
+	for _, p := range ps {
+		records = append(records, PluginRecord{
+			ID:          p.ID,
+			NamespaceID: p.NamespaceID,
+			Name:        p.Name,
+			DisplayName: p.DisplayName,
+			Description: p.Description,
+			LogoURL:     p.LogoURL,
+		})
+	}
+
+	return records, total, nil
+}
+
+// PluginListByNamespace returns plugins in a namespace with optional search and pagination.
+func (a *Adapter) PluginListByNamespace(ctx context.Context, namespaceID int, query string, limit, offset int) ([]PluginRecord, int, error) {
+	q := a.client.Plugin.Query().Where(plugin.NamespaceIDEQ(namespaceID))
+	if query != "" {
+		q = q.Where(plugin.NameContainsFold(query))
+	}
+
+	total, err := q.Count(ctx)
+	if err != nil {
+		return nil, 0, fmt.Errorf("count plugins by namespace: %w", err)
+	}
+
+	ps, err := q.Limit(limit).Offset(offset).All(ctx)
+	if err != nil {
+		return nil, 0, fmt.Errorf("list plugins by namespace: %w", err)
 	}
 
 	var records []PluginRecord
