@@ -1,0 +1,23 @@
+{
+  "env": {
+    "browser": true,
+    "es2024": true
+  },
+  "plugins": ["import", "unicorn"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "perf": "warn",
+    "style": "off"
+  },
+  "ignorePatterns": ["public/vendor/**"],
+  "rules": {
+    "no-console": [
+      "error",
+      {
+        "allow": ["error", "warn"]
+      }
+    ],
+    "no-debugger": "error"
+  }
+}

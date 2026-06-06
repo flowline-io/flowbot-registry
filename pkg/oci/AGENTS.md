@@ -20,6 +20,7 @@ Extracts named files from an OCI image's tar-gz layers.
 ### LayerFile
 
 Represents a file extracted from an OCI layer:
+
 ```go
 type LayerFile struct {
     Name    string

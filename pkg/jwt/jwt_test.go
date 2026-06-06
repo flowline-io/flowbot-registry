@@ -113,8 +113,8 @@ func TestGenerateToken(t *testing.T) {
 			subject: "org-owner",
 		},
 		{
-			name:    "empty scopes",
-			service: "registry.example.com",
+			name:     "empty scopes",
+			service:  "registry.example.com",
 			accesses: []AccessEntry{},
 			subject:  "anonymous",
 		},

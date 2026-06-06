@@ -21,12 +21,12 @@ handler/
 
 ## Routes
 
-| Method | Path | Handler |
-|--------|------|---------|
-| GET | `/api/v1/auth/token` | AuthTokenHandler |
-| POST | `/api/v1/plugins/:namespace/:name/publish` | PublishHandler |
-| GET | `/api/v1/plugins` | ListPluginsHandler |
-| GET | `/api/v1/plugins/:namespace/:name/versions/:version` | GetVersionHandler |
+| Method | Path                                                 | Handler            |
+| ------ | ---------------------------------------------------- | ------------------ |
+| GET    | `/api/v1/auth/token`                                 | AuthTokenHandler   |
+| POST   | `/api/v1/plugins/:namespace/:name/publish`           | PublishHandler     |
+| GET    | `/api/v1/plugins`                                    | ListPluginsHandler |
+| GET    | `/api/v1/plugins/:namespace/:name/versions/:version` | GetVersionHandler  |
 
 ## Testing
 

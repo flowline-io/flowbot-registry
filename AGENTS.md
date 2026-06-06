@@ -4,21 +4,21 @@ Plugin Registry — OCI-based plugin marketplace for the Flowbot ecosystem. Prov
 
 ## Dir Reference
 
-| Task              | Location               | Notes                                              |
-| ----------------- | ---------------------- | -------------------------------------------------- |
-| HTTP API server   | `cmd/server/`          | Fiber v3 entry point, routes, database init        |
-| CLI tool          | `cmd/cli/`             | Cobra CLI (publish, install, search commands)      |
-| Ent schemas       | `internal/ent/`        | ent ORM schema definitions for DB tables           |
-| HTTP handlers     | `internal/handler/`    | Request parsing, validation, response formatting   |
-| Business logic    | `internal/service/`    | Auth token issuance, plugin publish orchestration  |
-| OCI integration   | `pkg/oci/`             | OCI registry client (manifest pull, layer extract) |
-| JWT utilities     | `pkg/jwt/`             | RS256 JWT signing per Docker Registry v2 Token spec|
-| GitHub Actions    | `.github/workflows/`   | CI: lint, test, build                              |
+| Task            | Location             | Notes                                               |
+| --------------- | -------------------- | --------------------------------------------------- |
+| HTTP API server | `cmd/server/`        | Fiber v3 entry point, routes, database init         |
+| CLI tool        | `cmd/cli/`           | Cobra CLI (publish, install, search commands)       |
+| Ent schemas     | `internal/ent/`      | ent ORM schema definitions for DB tables            |
+| HTTP handlers   | `internal/handler/`  | Request parsing, validation, response formatting    |
+| Business logic  | `internal/service/`  | Auth token issuance, plugin publish orchestration   |
+| OCI integration | `pkg/oci/`           | OCI registry client (manifest pull, layer extract)  |
+| JWT utilities   | `pkg/jwt/`           | RS256 JWT signing per Docker Registry v2 Token spec |
+| GitHub Actions  | `.github/workflows/` | CI: lint, test, build                               |
 
 ## Key Patterns
 
-- **Format**: run command `go tool task format`
-- **Lint**: `revive` (strict, see `revive.toml`); also `testifylint` and `actionlint`
+- **Format**: `oxfmt` + `go fmt`; run command `go tool task format`
+- **Lint**: `oxfmt --check` first, then `revive` (strict, see `revive.toml`), `testifylint`, `actionlint`
 - **Imports**: stdlib → third-party → internal
 - **Naming**: packages lowercase, types CamelCase
 - **Errors**: Wrap with `%w`, use sentinel errors for known conditions
@@ -43,7 +43,7 @@ Plugin Registry — OCI-based plugin marketplace for the Flowbot ecosystem. Prov
 ```bash
 go tool task build            # Build server binary
 go tool task build:cli        # Build CLI binary
-go tool task lint             # Code lint (revive + testifylint + actionlint)
+go tool task lint             # Code lint (oxfmt + revive + testifylint + actionlint)
 go tool task test             # Unit tests
 go tool task test:race        # Race condition tests
 go tool task test:coverage    # Coverage report

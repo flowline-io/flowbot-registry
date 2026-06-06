@@ -64,7 +64,7 @@ func DetailPage(s store.StoreQuerier) fiber.Handler {
 			slog.Warn("detail: namespace not found", "namespace", namespace, "error", err)
 			if errors.Is(err, store.ErrNotFound) {
 				c.Status(http.StatusNotFound)
-				return Render(c, templates.LayoutNotFound("namespace `" + namespace + "` not found"))
+				return Render(c, templates.LayoutNotFound("namespace `"+namespace+"` not found"))
 			}
 			return errorPage(c, http.StatusInternalServerError, "Something went wrong. Please try again later.")
 		}
@@ -74,7 +74,7 @@ func DetailPage(s store.StoreQuerier) fiber.Handler {
 			slog.Warn("detail: plugin not found", "namespace", namespace, "name", name, "error", err)
 			if errors.Is(err, store.ErrNotFound) {
 				c.Status(http.StatusNotFound)
-				return Render(c, templates.LayoutNotFound("plugin `" + namespace + "/" + name + "` not found"))
+				return Render(c, templates.LayoutNotFound("plugin `"+namespace+"/"+name+"` not found"))
 			}
 			return errorPage(c, http.StatusInternalServerError, "Something went wrong. Please try again later.")
 		}
@@ -107,7 +107,7 @@ func NamespacePage(s store.StoreQuerier) fiber.Handler {
 			slog.Warn("namespace page: namespace not found", "namespace", namespace, "error", err)
 			if errors.Is(err, store.ErrNotFound) {
 				c.Status(http.StatusNotFound)
-				return Render(c, templates.LayoutNotFound("namespace `" + namespace + "` not found"))
+				return Render(c, templates.LayoutNotFound("namespace `"+namespace+"` not found"))
 			}
 			return errorPage(c, http.StatusInternalServerError, "Something went wrong. Please try again later.")
 		}

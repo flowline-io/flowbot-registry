@@ -24,6 +24,7 @@ Handles Docker Registry v2 token authentication. Parses scope strings, validates
 Handles plugin publishing. Fetches OCI manifests, extracts plugin.yaml and README.md, validates version and name, and upserts records in a transaction.
 
 Publish flow:
+
 1. Fetch OCI manifest by digest
 2. Extract `plugin.yaml` and `README.md` from layers
 3. Validate `plugin.yaml` exists, version matches, name matches request path

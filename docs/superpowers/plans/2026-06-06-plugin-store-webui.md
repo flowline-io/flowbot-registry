@@ -9,6 +9,7 @@
 **Tech Stack:** Go 1.26, Fiber v3, ent ORM, `github.com/a-h/templ`, htmx v2, daisyUI v5 + Tailwind CSS (CDN), `github.com/stretchr/testify`
 
 **File Structure:**
+
 ```
 internal/web/
 ├── render.go                          # Fiber templ adapter (package web)
@@ -43,6 +44,7 @@ taskfile.yaml                          # +build:templ task
 ### Task 1: Add templ dependency and Fiber render adapter
 
 **Files:**
+
 - Modify: `go.mod` (via `go get`)
 - Create: `internal/web/render.go`
 
@@ -90,6 +92,7 @@ git commit -m "feat: add templ dependency and Fiber render adapter"
 ### Task 2: Add new store methods to pkg/store
 
 **Files:**
+
 - Modify: `pkg/store/store.go`
 
 - [ ] **Step 1: Add NamespaceGetByID method**
@@ -196,6 +199,7 @@ git commit -m "feat: add NamespaceGetByID, PluginVersionListByPlugin, PluginList
 ### Task 3: Extract StoreQuerier interface for testability
 
 **Files:**
+
 - Modify: `pkg/store/store.go`
 
 - [ ] **Step 1: Add StoreQuerier interface**
@@ -236,6 +240,7 @@ git commit -m "feat: add StoreQuerier interface for testable web handlers"
 ### Task 4: Create layout.templ base template
 
 **Files:**
+
 - Create: `internal/web/templates/layout.templ`
 
 - [ ] **Step 1: Create layout.templ**
@@ -308,6 +313,7 @@ git commit -m "feat: add base layout template with navbar and CDN links"
 ### Task 5: Create plugin_card component
 
 **Files:**
+
 - Create: `internal/web/templates/components/plugin_card.templ`
 
 - [ ] **Step 1: Create plugin_card.templ**
@@ -384,6 +390,7 @@ git commit -m "feat: add plugin card templ component"
 ### Task 6: Create search_bar and pagination components
 
 **Files:**
+
 - Create: `internal/web/templates/components/search_bar.templ`
 - Create: `internal/web/templates/components/pagination.templ`
 
@@ -480,6 +487,7 @@ git commit -m "feat: add search bar and pagination templ components"
 ### Task 7: Create browse page template and handler with tests
 
 **Files:**
+
 - Create: `internal/web/templates/pages/browse.templ`
 - Create: `internal/web/handlers.go`
 - Create: `internal/web/handlers_test.go`
@@ -782,6 +790,7 @@ git commit -m "feat: add browse page with handler and tests"
 ### Task 8: Create htmx fragment handlers with tests
 
 **Files:**
+
 - Modify: `internal/web/handlers.go` (add RegisterWebRoutes, errorPage)
 - Create: `internal/web/htmx.go`
 - Create: `internal/web/htmx_test.go`
@@ -789,6 +798,7 @@ git commit -m "feat: add browse page with handler and tests"
 - [ ] **Step 1: Add errorPage and RegisterWebRoutes to handlers.go**
 
 Add imports to `internal/web/handlers.go`:
+
 ```go
 import (
 	// ... existing imports ...
@@ -1261,6 +1271,7 @@ git commit -m "feat: add htmx fragment handlers with tests"
 ### Task 9: Create detail page with tests
 
 **Files:**
+
 - Create: `internal/web/templates/components/version_list.templ`
 - Create: `internal/web/templates/components/readme_render.templ`
 - Create: `internal/web/templates/pages/detail.templ`
@@ -1586,6 +1597,7 @@ git commit -m "feat: add detail page with version list and readme rendering"
 ### Task 10: Create namespace page with tests
 
 **Files:**
+
 - Create: `internal/web/templates/pages/namespace.templ`
 - Modify: `internal/web/handlers.go` (add NamespacePage handler)
 - Modify: `internal/web/handlers_test.go` (add NamespacePage tests)
@@ -1780,6 +1792,7 @@ git commit -m "feat: add namespace page with handler and tests"
 ### Task 11: Wire web routes in cmd/server/main.go
 
 **Files:**
+
 - Modify: `cmd/server/main.go`
 
 - [ ] **Step 1: Add web route registration in main.go**
@@ -1821,6 +1834,7 @@ git commit -m "feat: wire web UI routes in server main"
 ### Task 12: Add build:templ task to taskfile
 
 **Files:**
+
 - Modify: `taskfile.yaml`
 
 - [ ] **Step 1: Add templ build task**
@@ -1828,10 +1842,10 @@ git commit -m "feat: wire web UI routes in server main"
 Add to `taskfile.yaml`, before the `tidy` task:
 
 ```yaml
-  build:templ:
-    desc: Generate Go code from templ templates
-    cmds:
-      - go tool templ generate
+build:templ:
+  desc: Generate Go code from templ templates
+  cmds:
+    - go tool templ generate
 ```
 
 - [ ] **Step 2: Install templ as a Go tool**
@@ -1858,6 +1872,7 @@ git commit -m "build: add build:templ task to taskfile"
 ### Task 13: Final integration test
 
 **Files:**
+
 - None (verification only)
 
 - [ ] **Step 1: Run full lint**

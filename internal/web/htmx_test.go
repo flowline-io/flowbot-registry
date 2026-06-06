@@ -171,7 +171,7 @@ func TestVersionReadmeFragment(t *testing.T) {
 				},
 			},
 			wantStatus: http.StatusOK,
-			wantBody:    []string{"<h1>Hello</h1>", "1.0.0"},
+			wantBody:   []string{"<h1>Hello</h1>", "1.0.0"},
 		},
 		{
 			name:       "version not found returns inline error",
@@ -188,7 +188,7 @@ func TestVersionReadmeFragment(t *testing.T) {
 				versions: []store.PluginVersionRecord{},
 			},
 			wantStatus: http.StatusOK,
-			wantBody:    []string{"Version not found"},
+			wantBody:   []string{"Version not found"},
 		},
 		{
 			name:       "namespace not found returns inline error",
@@ -199,7 +199,7 @@ func TestVersionReadmeFragment(t *testing.T) {
 				namespaces: map[int]*store.NamespaceRecord{},
 			},
 			wantStatus: http.StatusOK,
-			wantBody:    []string{"Version not found"},
+			wantBody:   []string{"Version not found"},
 		},
 	}
 

@@ -27,13 +27,14 @@ ent/
 
 ## Schemas
 
-| Schema | Fields | Unique Index |
-|--------|--------|-------------|
-| Namespace | id, name, type | name |
-| Plugin | id, namespace_id, name, display_name, description, logo_url | namespace_id + name |
+| Schema        | Fields                                                                        | Unique Index        |
+| ------------- | ----------------------------------------------------------------------------- | ------------------- |
+| Namespace     | id, name, type                                                                | name                |
+| Plugin        | id, namespace_id, name, display_name, description, logo_url                   | namespace_id + name |
 | PluginVersion | id, plugin_id, version, oci_image_ref, oci_digest, readme_html, manifest_json | plugin_id + version |
 
 Edges:
+
 - Namespace -> Plugin (one-to-many, "plugins")
 - Plugin -> PluginVersion (one-to-many, "versions")
 

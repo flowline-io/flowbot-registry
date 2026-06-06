@@ -8,15 +8,20 @@ warningCode = 0
 [rule.context-as-argument]
 [rule.context-keys-type]
 [rule.dot-imports]
-  arguments = [{ allowedPackages = ["github.com/onsi/ginkgo/v2", "github.com/onsi/gomega"], allowInTestFiles = true }]
+arguments = [
+  { allowedPackages = [
+    "github.com/onsi/ginkgo/v2",
+    "github.com/onsi/gomega",
+  ], allowInTestFiles = true },
+]
 [rule.error-return]
 [rule.error-strings]
 [rule.error-naming]
 [rule.exported]
-    Disabled = true
+Disabled = true
 [rule.increment-decrement]
 [rule.var-naming]
-    Disabled = true
+Disabled = true
 [rule.var-declaration]
 [rule.package-comments]
 [rule.range]
@@ -34,7 +39,7 @@ warningCode = 0
 [rule.duplicated-imports]
 [rule.empty-lines]
 [rule.function-result-limit]
-  arguments =[5]
+arguments = [5]
 [rule.get-return]
 [rule.identical-branches]
 [rule.if-return]
@@ -52,7 +57,7 @@ warningCode = 0
 [rule.unused-receiver]
 [rule.use-any]
 [rule.cyclomatic]
-  arguments = [15]
+arguments = [15]
 [rule.atomic]
 [rule.unchecked-type-assertion]
 [rule.datarace]

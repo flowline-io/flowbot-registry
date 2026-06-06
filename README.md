@@ -33,21 +33,21 @@ JWT Service          OCI Client            Store Adapter
 
 ## API Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/v1/auth/token` | Docker Registry v2 token (RS256 JWT) |
-| POST | `/api/v1/plugins/:ns/:name/publish` | Publish plugin version |
-| GET | `/api/v1/plugins` | Search/list plugins |
-| GET | `/api/v1/plugins/:ns/:name/versions/:v` | Get version details |
+| Method | Path                                    | Description                          |
+| ------ | --------------------------------------- | ------------------------------------ |
+| GET    | `/api/v1/auth/token`                    | Docker Registry v2 token (RS256 JWT) |
+| POST   | `/api/v1/plugins/:ns/:name/publish`     | Publish plugin version               |
+| GET    | `/api/v1/plugins`                       | Search/list plugins                  |
+| GET    | `/api/v1/plugins/:ns/:name/versions/:v` | Get version details                  |
 
 ## Database
 
 ent ORM with PostgreSQL. Three core tables with unique composite indexes:
 
-| Table | Unique Index |
-|-------|-------------|
-| `namespaces` | name |
-| `plugins` | namespace_id + name |
+| Table             | Unique Index        |
+| ----------------- | ------------------- |
+| `namespaces`      | name                |
+| `plugins`         | namespace_id + name |
 | `plugin_versions` | plugin_id + version |
 
 ## Quick Start
@@ -86,7 +86,7 @@ See `config.yaml` (not committed, generated from environment variables):
 
 ```yaml
 server:
-  listen: ":8080"
+  listen: ':8080'
 database:
   dsn: postgres://user:pass@host:5432/flowbot_registry?sslmode=disable
 registry:

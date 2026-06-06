@@ -2,8 +2,8 @@
 
 Two binaries serving distinct roles.
 
-| Binary | Main file       | Purpose                          |
-| ------ | --------------- | -------------------------------- |
+| Binary | Main file        | Purpose                          |
+| ------ | ---------------- | -------------------------------- |
 | server | `server/main.go` | HTTP API server (Fiber v3, slog) |
 | cli    | `cli/main.go`    | Plugin management CLI (cobra)    |
 

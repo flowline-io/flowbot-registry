@@ -22,7 +22,7 @@ func TestRender(t *testing.T) {
 	}{
 		{
 			name: "renders simple component",
-			component: templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+			component: templ.ComponentFunc(func(_ context.Context, w io.Writer) error {
 				_, err := io.WriteString(w, "<p>hello</p>")
 				return err
 			}),
@@ -30,14 +30,14 @@ func TestRender(t *testing.T) {
 		},
 		{
 			name: "renders empty component",
-			component: templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+			component: templ.ComponentFunc(func(_ context.Context, _ io.Writer) error {
 				return nil
 			}),
 			wantBody: "",
 		},
 		{
 			name: "renders component with unicode",
-			component: templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+			component: templ.ComponentFunc(func(_ context.Context, w io.Writer) error {
 				_, err := io.WriteString(w, "<span>cafe</span>")
 				return err
 			}),
@@ -70,7 +70,7 @@ func TestRender(t *testing.T) {
 func TestRenderContentType(t *testing.T) {
 	app := fiber.New()
 	app.Get("/", func(c fiber.Ctx) error {
-		return Render(c, templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
+		return Render(c, templ.ComponentFunc(func(_ context.Context, _ io.Writer) error {
 			return nil
 		}))
 	})
