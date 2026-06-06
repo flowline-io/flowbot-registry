@@ -24,12 +24,12 @@ import (
 // AllModules returns all fx options needed to start the server.
 func AllModules() fx.Option {
 	return fx.Options(
-	fx.Provide(
-		newViper,
-		newEntClient,
-		newFiberApp,
-		newRegistryURL,
-	),
+		fx.Provide(
+			newViper,
+			newEntClient,
+			newFiberApp,
+			newRegistryURL,
+		),
 		fx.Invoke(runMigrations),
 		store.Module,
 		jwt.Module,

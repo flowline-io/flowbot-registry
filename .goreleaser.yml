@@ -38,20 +38,20 @@ builds:
       - -s -w -X github.com/flowline-io/flowbot-registry/version.Buildstamp={{.Date}}
 
 archives:
-  - formats: ["binary"]
+  - formats: ['binary']
     name_template: >-
       {{ .Binary }}_{{ .Os }}_{{ .Arch }}
 
 checksum:
-  name_template: "{{ .ProjectName }}_checksums.txt"
+  name_template: '{{ .ProjectName }}_checksums.txt'
 
 changelog:
   sort: desc
   filters:
     exclude:
-      - "^docs:"
-      - "^test:"
-      - "^Merge"
+      - '^docs:'
+      - '^test:'
+      - '^Merge'
 
 report_sizes: true
 

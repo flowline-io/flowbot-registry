@@ -42,6 +42,9 @@ func runRegister(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
+	// Load access token for authentication
+	accessToken := getAccessToken(registerArgs.apiKey)
+
 	// Resolve registry URL from store if not explicitly set.
 	registerArgs.registryURL = resolveRegistryURLFromStore(cmd, registerArgs.storeURL, registerArgs.registryURL)
 
@@ -59,7 +62,7 @@ func runRegister(cmd *cobra.Command, args []string) error {
 
 	slog.Info("register: registering metadata", "namespace", ns, "name", name, "version", version, "digest", digest)
 
-	if err := registerPublishMetadata(registerArgs.storeURL, registerArgs.apiKey, ociRef, ns, name, version, digest.String()); err != nil {
+	if err := registerPublishMetadata(registerArgs.storeURL, accessToken, ociRef, ns, name, version, digest.String()); err != nil {
 		return fmt.Errorf("register metadata: %w", err)
 	}
 

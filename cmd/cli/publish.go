@@ -13,6 +13,7 @@ import (
 	"github.com/flowline-io/flowbot-registry/pkg/oci"
 	"github.com/flowline-io/flowbot-registry/pkg/sign"
 
+	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/v1"
 	"github.com/spf13/cobra"
 )
@@ -75,10 +76,15 @@ func runPublish(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("parse plugin.yaml: %w", err)
 	}
 
+	// Load access token for authentication
+	accessToken := getAccessToken(publishArgs.apiKey)
+
 	// Resolve registry URL from store if not explicitly set.
 	publishArgs.registryURL = resolveRegistryURLFromStore(cmd, publishArgs.storeURL, publishArgs.registryURL)
 
 	namespace, name := manifest.PluginNameFromRef(m.Name)
+
+	ociAuth := resolveOCIAuth(publishArgs.storeURL, accessToken, namespace, name)
 
 	_, _ = fmt.Printf("Publishing plugin: %s/%s v%s\n", namespace, name, m.Version)
 	_, _ = fmt.Println()
@@ -86,7 +92,7 @@ func runPublish(cmd *cobra.Command, _ []string) error {
 	ociRef := fmt.Sprintf("%s/%s/%s:%s", strings.TrimRight(oci.StripScheme(publishArgs.registryURL), "/"), namespace, name, m.Version)
 	ociClient := oci.NewClient(publishArgs.registryURL)
 
-	existingDigest, err := buildAndPushArtifact(cwd, raw, m, ociRef, ociClient)
+	existingDigest, err := buildAndPushArtifact(cwd, raw, m, ociRef, ociClient, ociAuth)
 	if err != nil {
 		return err
 	}
@@ -108,7 +114,7 @@ func runPublish(cmd *cobra.Command, _ []string) error {
 			return fmt.Errorf("sign image: %w", signErr)
 		}
 
-		if pushSigErr := ociClient.PushSignature(context.Background(), ociRef, result.Payload, result.Signature); pushSigErr != nil {
+		if pushSigErr := ociClient.PushSignature(context.Background(), ociRef, result.Payload, result.Signature, oci.WithSignatureAuth(ociAuth)); pushSigErr != nil {
 			return fmt.Errorf("push signature: %w", pushSigErr)
 		}
 		_, _ = fmt.Println("  Signed OK")
@@ -118,7 +124,7 @@ func runPublish(cmd *cobra.Command, _ []string) error {
 
 	// Register metadata
 	_, _ = fmt.Println("  [4/4] Registering metadata...")
-	if regErr := registerPublishMetadata(publishArgs.storeURL, publishArgs.apiKey, ociRef, namespace, name, m.Version, existingDigest.String()); regErr != nil {
+	if regErr := registerPublishMetadata(publishArgs.storeURL, accessToken, ociRef, namespace, name, m.Version, existingDigest.String()); regErr != nil {
 		return fmt.Errorf("register publish metadata: %w", regErr)
 	}
 
@@ -131,7 +137,7 @@ func runPublish(cmd *cobra.Command, _ []string) error {
 
 // buildAndPushArtifact checks for an existing image, builds the plugin, and pushes the OCI artifact.
 // Returns the image digest, reusing the existing one on idempotent publish.
-func buildAndPushArtifact(cwd string, raw []byte, m *manifest.Manifest, ociRef string, ociClient *oci.Client) (v1.Hash, error) {
+func buildAndPushArtifact(cwd string, raw []byte, m *manifest.Manifest, ociRef string, ociClient *oci.Client, ociAuth authn.Authenticator) (v1.Hash, error) {
 	// Check idempotency
 	existingDigest, err := ociClient.HeadManifest(context.Background(), ociRef)
 	if err == nil {
@@ -176,7 +182,11 @@ func buildAndPushArtifact(cwd string, raw []byte, m *manifest.Manifest, ociRef s
 
 	// Push OCI image
 	_, _ = fmt.Println("  [2/4] Pushing OCI image...")
-	existingDigest, pushErr := ociClient.PushArtifact(context.Background(), ociRef, ociFiles)
+	pushOpts := []oci.PushArtifactOption{}
+	if ociAuth != nil {
+		pushOpts = append(pushOpts, oci.WithAuth(ociAuth))
+	}
+	existingDigest, pushErr := ociClient.PushArtifact(context.Background(), ociRef, ociFiles, pushOpts...)
 	if pushErr != nil {
 		return v1.Hash{}, fmt.Errorf("push OCI artifact: %w", pushErr)
 	}
@@ -198,7 +208,7 @@ func formatSize(bytesCount int) string {
 	return fmt.Sprintf("%.1f %cB", float64(bytesCount)/float64(div), "KMGTPE"[exp])
 }
 
-func registerPublishMetadata(storeURL string, apiKey string, ociRef string, namespace string, name string, version string, digest string) error {
+func registerPublishMetadata(storeURL string, accessToken string, ociRef string, namespace string, name string, version string, digest string) error {
 	apiURL := fmt.Sprintf("%s/api/v1/plugins/%s/%s/publish",
 		strings.TrimRight(storeURL, "/"), namespace, name)
 
@@ -210,7 +220,7 @@ func registerPublishMetadata(storeURL string, apiKey string, ociRef string, name
 		"oci_image_ref": ociRef,
 	}
 
-	resp, err := doJSONPost(apiURL, body, apiKey)
+	resp, err := doJSONPost(apiURL, body, accessToken)
 	if err != nil {
 		return fmt.Errorf("register metadata: %w", err)
 	}

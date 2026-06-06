@@ -63,10 +63,10 @@ func TestFetchRegistryURLFromStore(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name         string
-		handler      http.HandlerFunc
-		wantURL      string
-		wantErr      bool
+		name    string
+		handler http.HandlerFunc
+		wantURL string
+		wantErr bool
 	}{
 		{
 			name: "happy path: store returns registry URL",
@@ -115,10 +115,10 @@ func TestRegistryInfoResponse_JSON(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name     string
-		json     string
-		wantURL  string
-		wantErr  bool
+		name    string
+		json    string
+		wantURL string
+		wantErr bool
 	}{
 		{
 			name:    "happy path: valid JSON",

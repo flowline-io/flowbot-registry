@@ -8,10 +8,12 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/flowline-io/flowbot-registry/pkg/json"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 var loginArgs struct {
@@ -120,10 +122,13 @@ func doLogin(email, password string) error {
 	return nil
 }
 
-// readPassword reads a password from stdin (simple reader, no echo hiding on all platforms).
+// readPassword reads a password from stdin without echoing.
 func readPassword() (string, error) {
-	reader := bufio.NewReader(os.Stdin)
-	return reader.ReadString('\n')
+	bytePass, err := term.ReadPassword(int(syscall.Stdin))
+	if err != nil {
+		return "", err
+	}
+	return string(bytePass), nil
 }
 
 // parseTime attempts to parse a timestamp string using common layouts.

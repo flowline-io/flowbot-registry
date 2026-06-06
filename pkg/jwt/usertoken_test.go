@@ -41,7 +41,7 @@ func TestUserTokenService_GenerateAndParseAccessToken(t *testing.T) {
 			require.NoError(t, err)
 			assert.NotEmpty(t, token)
 			assert.True(t, expiresAt.After(time.Now()))
-			assert.True(t, expiresAt.Before(time.Now().Add(2 * time.Hour)))
+			assert.True(t, expiresAt.Before(time.Now().Add(2*time.Hour)))
 
 			claims, err := svc.ParseAccessToken(token)
 			require.NoError(t, err)

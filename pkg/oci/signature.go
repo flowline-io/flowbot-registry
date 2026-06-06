@@ -23,15 +23,39 @@ const (
 	signatureTagSuffix = ".sig"
 )
 
+// PushSignatureOption configures a signature push operation.
+type PushSignatureOption func(*pushSignatureConfig)
+
+type pushSignatureConfig struct {
+	auth authn.Authenticator
+}
+
+// WithSignatureAuth sets the authenticator for the signature push operation.
+func WithSignatureAuth(a authn.Authenticator) PushSignatureOption {
+	return func(cfg *pushSignatureConfig) {
+		cfg.auth = a
+	}
+}
+
 // PushSignature pushes a Cosign signature as an OCI artifact tagged with the sig suffix.
-func (c *Client) PushSignature(ctx context.Context, refStr string, payload []byte, signature []byte) error {
+func (c *Client) PushSignature(ctx context.Context, refStr string, payload []byte, signature []byte, opts ...PushSignatureOption) error {
+	cfg := &pushSignatureConfig{}
+	for _, o := range opts {
+		o(cfg)
+	}
+
 	_ = payload // accepted for API completeness
 	ref, err := name.ParseReference(refStr)
 	if err != nil {
 		return fmt.Errorf("parse reference %s: %w", refStr, err)
 	}
 
-	remoteOpts := []remote.Option{remote.WithContext(ctx), remote.WithAuthFromKeychain(authn.DefaultKeychain)}
+	remoteOpts := []remote.Option{remote.WithContext(ctx)}
+	if cfg.auth != nil {
+		remoteOpts = append(remoteOpts, remote.WithAuth(cfg.auth))
+	} else {
+		remoteOpts = append(remoteOpts, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+	}
 	if c.plainHTTP {
 		remoteOpts = append(remoteOpts, remote.WithTransport(c.Transport()))
 	}
