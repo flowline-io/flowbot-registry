@@ -42,7 +42,7 @@ Build pipeline: `go tool task build` picks up templ-generated Go files automatic
 New Go modules to add:
 
 - `github.com/a-h/templ` — Go HTML templating engine, compiles `.templ` to `*_templ.go`
-- `github.com/gofiber/template/templ` (or custom Fiber adapter) — templ integration with Fiber
+- Custom Fiber adapter in `internal/web/render.go` — calls `templ.Component.Render(ctx, w)` directly from handlers
 
 Client-side (loaded via CDN in `layout.templ`):
 
@@ -54,30 +54,34 @@ Choose a daisyUI theme; default `light` theme for now, configurable later.
 
 ## Routes
 
+### Route Ordering
+
+Parameterized page routes (`/:namespace`, `/:namespace/:name`) must be registered after all static/prefixed routes (`/web/*`, `/api/*`, `/static/*`, `/favicon.ico`) to avoid unintentionally matching those paths as namespaces.
+
 ### Page Routes
 
-| Method | Path | Handler | Description |
-|--------|------|---------|-------------|
-| GET | `/` | `BrowsePage` | Plugin listing with search bar, cards grid, pagination |
-| GET | `/:namespace` | `NamespacePage` | All plugins from a namespace |
-| GET | `/:namespace/:name` | `DetailPage` | Plugin detail: meta, version list, README |
+| Method | Path                | Handler         | Description                                            |
+| ------ | ------------------- | --------------- | ------------------------------------------------------ |
+| GET    | `/`                 | `BrowsePage`    | Plugin listing with search bar, cards grid, pagination |
+| GET    | `/:namespace`       | `NamespacePage` | All plugins from a namespace                           |
+| GET    | `/:namespace/:name` | `DetailPage`    | Plugin detail: meta, version list, README              |
 
 ### htmx Fragment Routes
 
-| Method | Path | Handler | Description |
-|--------|------|---------|-------------|
-| GET | `/web/search` | `SearchFragment` | Search results grid + pagination (querystring `?q=`) |
-| GET | `/web/plugins` | `PluginGridFragment` | Plugin cards for load-more pagination (`?offset=&limit=`) |
-| GET | `/web/versions/:ns/:name/:version` | `VersionReadmeFragment` | README HTML for a specific version |
+| Method | Path                               | Handler                 | Description                                               |
+| ------ | ---------------------------------- | ----------------------- | --------------------------------------------------------- |
+| GET    | `/web/search`                      | `SearchFragment`        | Search results grid + pagination (querystring `?q=`)      |
+| GET    | `/web/plugins`                     | `PluginGridFragment`    | Plugin cards for load-more pagination (`?offset=&limit=`) |
+| GET    | `/web/versions/:ns/:name/:version` | `VersionReadmeFragment` | README HTML for a specific version                        |
 
 ### Existing API Routes (unchanged)
 
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/api/v1/auth/token` | Docker Registry token |
-| POST | `/api/v1/plugins/:ns/:name/publish` | Publish plugin |
-| GET | `/api/v1/plugins` | Search/list plugins (JSON) |
-| GET | `/api/v1/plugins/:ns/:name/versions/:v` | Get version (JSON) |
+| Method | Path                                    | Description                |
+| ------ | --------------------------------------- | -------------------------- |
+| GET    | `/api/v1/auth/token`                    | Docker Registry token      |
+| POST   | `/api/v1/plugins/:ns/:name/publish`     | Publish plugin             |
+| GET    | `/api/v1/plugins`                       | Search/list plugins (JSON) |
+| GET    | `/api/v1/plugins/:ns/:name/versions/:v` | Get version (JSON)         |
 
 ## Pages and Data Flow
 
@@ -112,13 +116,14 @@ GET /:namespace/:name  →  DetailPage handler:
   - Calls store.NamespaceGetByName(namespace) → namespaceID
   - Calls store.PluginGetByNamespaceAndName(namespaceID, name)
   - Calls store.PluginVersionListByPlugin(ctx, pluginID) (new method, ordered by creation DESC)
-  - Calls store.PluginVersionGetByPluginAndVersion for latest version's README
-  - Renders detail.templ with sidebar (versions) + main (meta + README)
+  - Takes first result as latest version
+  - Renders detail.templ with sidebar (versions) + main (meta + latest version README)
 ```
 
 Initial load shows latest version (first in list). README rendered as HTML from `readme_html` field.
 
 New store methods required:
+
 - `PluginVersionListByPlugin(ctx, pluginID) ([]PluginVersionRecord, error)` — ordered by `id DESC` (creation order)
 - `PluginListByNamespace(ctx, namespaceID, query, limit, offset) ([]PluginRecord, int, error)` — filter by namespace
 - `NamespaceGetByID(ctx, id)` — needed for browse page card rendering
@@ -168,27 +173,29 @@ Active version highlighted via CSS class swap (htmx class-tools or server-render
 
 ## Error Handling
 
-| Scenario | Response |
-|----------|----------|
-| Namespace not found (page) | 404 page: "Namespace `foo` not found" |
-| Plugin not found (page) | 404 page: "Plugin `foo/bar` not found" |
-| Version not found (htmx fragment) | `<div class="alert">Version not found</div>` (200 OK, inline error) |
-| Search yields no results | Empty state: "No plugins found matching `query`" with illustration |
-| Database error | Generic error page: "Something went wrong. Please try again later." (500) |
-| Invalid query params | Clamp `limit` 1-50, clamp `offset` >= 0, ignore non-numeric values |
-| Empty store (no plugins at all) | Empty state: "No plugins published yet" with brief description |
+| Scenario                          | Response                                                                  |
+| --------------------------------- | ------------------------------------------------------------------------- |
+| Namespace not found (page)        | 404 page: "Namespace `foo` not found"                                     |
+| Plugin not found (page)           | 404 page: "Plugin `foo/bar` not found"                                    |
+| Version not found (htmx fragment) | `<div class="alert">Version not found</div>` (200 OK, inline error)       |
+| Search yields no results          | Empty state: "No plugins found matching `query`" with illustration        |
+| Database error                    | Generic error page: "Something went wrong. Please try again later." (500) |
+| Invalid query params              | Clamp `limit` 1-50, clamp `offset` >= 0, ignore non-numeric values        |
+| Empty store (no plugins at all)   | Empty state: "No plugins published yet" with brief description            |
 
 ## Layout and Styling
 
 **Layout**: Top navbar + centered content (max-width container, daisyUI `container` class).
 
 Navbar contains:
+
 - Logo/brand text (links to `/`)
 - Search bar (form submits to browse page as progressive enhancement fallback)
 
 Breadcrumbs on detail page: Home / namespace / plugin
 
 daisyUI components used:
+
 - `navbar` — top navigation
 - `card` — plugin cards with image (logo), title, description, badge (namespace)
 - `input` — search input styled as daisyUI form-control
@@ -203,6 +210,7 @@ daisyUI components used:
 ## Progressive Enhancement
 
 All htmx interactions have fallback behavior for non-JS clients:
+
 - Search form submits to `/` with `?q=` (full page reload)
 - Load more button is a link to `/?offset=N` (full page reload)
 - Version links are links to the detail page with `?version=v1.2.3` (full page reload with that version pre-selected)
@@ -214,6 +222,7 @@ Table-driven tests co-located with source files, minimum 3 cases per table.
 ### Page Handler Tests (`handlers_test.go`)
 
 Test cases per handler:
+
 - Happy path: renders expected HTML, status 200
 - Not found: namespace/plugin missing, status 404, contains error message
 - DB error: store returns error, status 500, contains generic error
@@ -221,6 +230,7 @@ Test cases per handler:
 ### htmx Fragment Tests (`htmx_test.go`)
 
 Test cases per handler:
+
 - Happy path: search returns matching cards, version fragment renders README
 - No results: search returns empty state HTML
 - Pagination: load more returns next slice, last page returns no button
