@@ -21,6 +21,10 @@ import (
 	"github.com/flowline-io/flowbot-registry/pkg/store"
 )
 
+func init() {
+	sql.Register("postgres", stdlib.GetDefaultDriver())
+}
+
 // AllModules returns all fx options needed to start the server.
 func AllModules() fx.Option {
 	return fx.Options(
@@ -73,8 +77,6 @@ func newRegistryURL(v *viper.Viper) string {
 }
 
 func newEntClient(v *viper.Viper, lc fx.Lifecycle) (*ent.Client, error) {
-	sql.Register("postgres", stdlib.GetDefaultDriver())
-
 	dsn := v.GetString("database.dsn")
 	if dsn == "" {
 		return nil, fmt.Errorf("database.dsn is not configured")
