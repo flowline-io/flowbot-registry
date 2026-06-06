@@ -1,0 +1,36 @@
+package pages
+
+import (
+	"github.com/flowline-io/flowbot-registry/internal/web/templates"
+	"github.com/flowline-io/flowbot-registry/internal/web/templates/components"
+	"github.com/flowline-io/flowbot-registry/pkg/store"
+)
+
+templ BrowsePage(plugins []store.PluginRecord, namespaceNames map[int]string, total int, limit int, offset int, query string) {
+	@templates.Layout() {
+		@components.SearchBar(query)
+		<h1 class="text-2xl font-bold mb-6">Plugins</h1>
+		if len(plugins) == 0 {
+			<div class="flex flex-col items-center justify-center py-16 text-center">
+				<div class="text-5xl mb-4 opacity-30">+</div>
+				<h2 class="text-xl font-semibold mb-2">No plugins found</h2>
+				if query != "" {
+					<p class="text-base-content/60">No plugins matching "{ query }". Try a different search term.</p>
+				} else {
+					<p class="text-base-content/60">No plugins have been published yet. Use the CLI to publish your first plugin.</p>
+				}
+			</div>
+		} else {
+			<div id="plugin-grid">
+				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+					for _, p := range plugins {
+						<div>
+							@components.PluginCard(namespaceNames[p.NamespaceID], p.Name, p.DisplayName, p.Description, p.LogoURL)
+						</div>
+					}
+				</div>
+				@components.LoadMoreButton(offset, limit, total, query)
+			</div>
+		}
+	}
+}
