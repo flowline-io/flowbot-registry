@@ -487,7 +487,9 @@ func (_q *UserQuery) loadNamespaces(ctx context.Context, query *NamespaceQuery, 
 			init(nodes[i])
 		}
 	}
-	query.withFKs = true
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(namespace.FieldUserID)
+	}
 	query.Where(predicate.Namespace(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(user.NamespacesColumn), fks...))
 	}))
@@ -496,13 +498,13 @@ func (_q *UserQuery) loadNamespaces(ctx context.Context, query *NamespaceQuery, 
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.user_namespaces
+		fk := n.UserID
 		if fk == nil {
-			return fmt.Errorf(`foreign-key "user_namespaces" is nil for node %v`, n.ID)
+			return fmt.Errorf(`foreign-key "user_id" is nil for node %v`, n.ID)
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "user_namespaces" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

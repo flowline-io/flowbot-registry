@@ -47,6 +47,8 @@ type NamespaceMutation struct {
 	plugins        map[int]struct{}
 	removedplugins map[int]struct{}
 	clearedplugins bool
+	user           *int
+	cleareduser    bool
 	done           bool
 	oldValue       func(context.Context) (*Namespace, error)
 	predicates     []predicate.Namespace
@@ -228,6 +230,55 @@ func (m *NamespaceMutation) ResetType() {
 	m._type = nil
 }
 
+// SetUserID sets the "user_id" field.
+func (m *NamespaceMutation) SetUserID(i int) {
+	m.user = &i
+}
+
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *NamespaceMutation) UserID() (r int, exists bool) {
+	v := m.user
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserID returns the old "user_id" field's value of the Namespace entity.
+// If the Namespace object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *NamespaceMutation) OldUserID(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
+	}
+	return oldValue.UserID, nil
+}
+
+// ClearUserID clears the value of the "user_id" field.
+func (m *NamespaceMutation) ClearUserID() {
+	m.user = nil
+	m.clearedFields[namespace.FieldUserID] = struct{}{}
+}
+
+// UserIDCleared returns if the "user_id" field was cleared in this mutation.
+func (m *NamespaceMutation) UserIDCleared() bool {
+	_, ok := m.clearedFields[namespace.FieldUserID]
+	return ok
+}
+
+// ResetUserID resets all changes to the "user_id" field.
+func (m *NamespaceMutation) ResetUserID() {
+	m.user = nil
+	delete(m.clearedFields, namespace.FieldUserID)
+}
+
 // AddPluginIDs adds the "plugins" edge to the Plugin entity by ids.
 func (m *NamespaceMutation) AddPluginIDs(ids ...int) {
 	if m.plugins == nil {
@@ -282,6 +333,33 @@ func (m *NamespaceMutation) ResetPlugins() {
 	m.removedplugins = nil
 }
 
+// ClearUser clears the "user" edge to the User entity.
+func (m *NamespaceMutation) ClearUser() {
+	m.cleareduser = true
+	m.clearedFields[namespace.FieldUserID] = struct{}{}
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *NamespaceMutation) UserCleared() bool {
+	return m.UserIDCleared() || m.cleareduser
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *NamespaceMutation) UserIDs() (ids []int) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *NamespaceMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
 // Where appends a list predicates to the NamespaceMutation builder.
 func (m *NamespaceMutation) Where(ps ...predicate.Namespace) {
 	m.predicates = append(m.predicates, ps...)
@@ -316,12 +394,15 @@ func (m *NamespaceMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *NamespaceMutation) Fields() []string {
-	fields := make([]string, 0, 2)
+	fields := make([]string, 0, 3)
 	if m.name != nil {
 		fields = append(fields, namespace.FieldName)
 	}
 	if m._type != nil {
 		fields = append(fields, namespace.FieldType)
+	}
+	if m.user != nil {
+		fields = append(fields, namespace.FieldUserID)
 	}
 	return fields
 }
@@ -335,6 +416,8 @@ func (m *NamespaceMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case namespace.FieldType:
 		return m.GetType()
+	case namespace.FieldUserID:
+		return m.UserID()
 	}
 	return nil, false
 }
@@ -348,6 +431,8 @@ func (m *NamespaceMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldName(ctx)
 	case namespace.FieldType:
 		return m.OldType(ctx)
+	case namespace.FieldUserID:
+		return m.OldUserID(ctx)
 	}
 	return nil, fmt.Errorf("unknown Namespace field %s", name)
 }
@@ -371,6 +456,13 @@ func (m *NamespaceMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetType(v)
 		return nil
+	case namespace.FieldUserID:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Namespace field %s", name)
 }
@@ -378,13 +470,16 @@ func (m *NamespaceMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *NamespaceMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *NamespaceMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	}
 	return nil, false
 }
 
@@ -400,7 +495,11 @@ func (m *NamespaceMutation) AddField(name string, value ent.Value) error {
 // ClearedFields returns all nullable fields that were cleared during this
 // mutation.
 func (m *NamespaceMutation) ClearedFields() []string {
-	return nil
+	var fields []string
+	if m.FieldCleared(namespace.FieldUserID) {
+		fields = append(fields, namespace.FieldUserID)
+	}
+	return fields
 }
 
 // FieldCleared returns a boolean indicating if a field with the given name was
@@ -413,6 +512,11 @@ func (m *NamespaceMutation) FieldCleared(name string) bool {
 // ClearField clears the value of the field with the given name. It returns an
 // error if the field is not defined in the schema.
 func (m *NamespaceMutation) ClearField(name string) error {
+	switch name {
+	case namespace.FieldUserID:
+		m.ClearUserID()
+		return nil
+	}
 	return fmt.Errorf("unknown Namespace nullable field %s", name)
 }
 
@@ -426,15 +530,21 @@ func (m *NamespaceMutation) ResetField(name string) error {
 	case namespace.FieldType:
 		m.ResetType()
 		return nil
+	case namespace.FieldUserID:
+		m.ResetUserID()
+		return nil
 	}
 	return fmt.Errorf("unknown Namespace field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *NamespaceMutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.plugins != nil {
 		edges = append(edges, namespace.EdgePlugins)
+	}
+	if m.user != nil {
+		edges = append(edges, namespace.EdgeUser)
 	}
 	return edges
 }
@@ -449,13 +559,17 @@ func (m *NamespaceMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case namespace.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *NamespaceMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.removedplugins != nil {
 		edges = append(edges, namespace.EdgePlugins)
 	}
@@ -478,9 +592,12 @@ func (m *NamespaceMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *NamespaceMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedplugins {
 		edges = append(edges, namespace.EdgePlugins)
+	}
+	if m.cleareduser {
+		edges = append(edges, namespace.EdgeUser)
 	}
 	return edges
 }
@@ -491,6 +608,8 @@ func (m *NamespaceMutation) EdgeCleared(name string) bool {
 	switch name {
 	case namespace.EdgePlugins:
 		return m.clearedplugins
+	case namespace.EdgeUser:
+		return m.cleareduser
 	}
 	return false
 }
@@ -499,6 +618,9 @@ func (m *NamespaceMutation) EdgeCleared(name string) bool {
 // if that edge is not defined in the schema.
 func (m *NamespaceMutation) ClearEdge(name string) error {
 	switch name {
+	case namespace.EdgeUser:
+		m.ClearUser()
+		return nil
 	}
 	return fmt.Errorf("unknown Namespace unique edge %s", name)
 }
@@ -509,6 +631,9 @@ func (m *NamespaceMutation) ResetEdge(name string) error {
 	switch name {
 	case namespace.EdgePlugins:
 		m.ResetPlugins()
+		return nil
+	case namespace.EdgeUser:
+		m.ResetUser()
 		return nil
 	}
 	return fmt.Errorf("unknown Namespace edge %s", name)

@@ -41,7 +41,7 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "namespace" package.
 	NamespacesInverseTable = "namespaces"
 	// NamespacesColumn is the table column denoting the namespaces relation/edge.
-	NamespacesColumn = "user_namespaces"
+	NamespacesColumn = "user_id"
 )
 
 // Columns holds all SQL columns for user fields.

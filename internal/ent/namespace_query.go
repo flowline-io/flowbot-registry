@@ -15,6 +15,7 @@ import (
 	"github.com/flowline-io/flowbot-registry/internal/ent/namespace"
 	"github.com/flowline-io/flowbot-registry/internal/ent/plugin"
 	"github.com/flowline-io/flowbot-registry/internal/ent/predicate"
+	"github.com/flowline-io/flowbot-registry/internal/ent/user"
 )
 
 // NamespaceQuery is the builder for querying Namespace entities.
@@ -25,7 +26,7 @@ type NamespaceQuery struct {
 	inters      []Interceptor
 	predicates  []predicate.Namespace
 	withPlugins *PluginQuery
-	withFKs     bool
+	withUser    *UserQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -77,6 +78,28 @@ func (_q *NamespaceQuery) QueryPlugins() *PluginQuery {
 			sqlgraph.From(namespace.Table, namespace.FieldID, selector),
 			sqlgraph.To(plugin.Table, plugin.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, namespace.PluginsTable, namespace.PluginsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryUser chains the current query on the "user" edge.
+func (_q *NamespaceQuery) QueryUser() *UserQuery {
+	query := (&UserClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(namespace.Table, namespace.FieldID, selector),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, namespace.UserTable, namespace.UserColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -277,6 +300,7 @@ func (_q *NamespaceQuery) Clone() *NamespaceQuery {
 		inters:      append([]Interceptor{}, _q.inters...),
 		predicates:  append([]predicate.Namespace{}, _q.predicates...),
 		withPlugins: _q.withPlugins.Clone(),
+		withUser:    _q.withUser.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -291,6 +315,17 @@ func (_q *NamespaceQuery) WithPlugins(opts ...func(*PluginQuery)) *NamespaceQuer
 		opt(query)
 	}
 	_q.withPlugins = query
+	return _q
+}
+
+// WithUser tells the query-builder to eager-load the nodes that are connected to
+// the "user" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *NamespaceQuery) WithUser(opts ...func(*UserQuery)) *NamespaceQuery {
+	query := (&UserClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withUser = query
 	return _q
 }
 
@@ -371,15 +406,12 @@ func (_q *NamespaceQuery) prepareQuery(ctx context.Context) error {
 func (_q *NamespaceQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Namespace, error) {
 	var (
 		nodes       = []*Namespace{}
-		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			_q.withPlugins != nil,
+			_q.withUser != nil,
 		}
 	)
-	if withFKs {
-		_spec.Node.Columns = append(_spec.Node.Columns, namespace.ForeignKeys...)
-	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*Namespace).scanValues(nil, columns)
 	}
@@ -402,6 +434,12 @@ func (_q *NamespaceQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Na
 		if err := _q.loadPlugins(ctx, query, nodes,
 			func(n *Namespace) { n.Edges.Plugins = []*Plugin{} },
 			func(n *Namespace, e *Plugin) { n.Edges.Plugins = append(n.Edges.Plugins, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withUser; query != nil {
+		if err := _q.loadUser(ctx, query, nodes, nil,
+			func(n *Namespace, e *User) { n.Edges.User = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -439,6 +477,38 @@ func (_q *NamespaceQuery) loadPlugins(ctx context.Context, query *PluginQuery, n
 	}
 	return nil
 }
+func (_q *NamespaceQuery) loadUser(ctx context.Context, query *UserQuery, nodes []*Namespace, init func(*Namespace), assign func(*Namespace, *User)) error {
+	ids := make([]int, 0, len(nodes))
+	nodeids := make(map[int][]*Namespace)
+	for i := range nodes {
+		if nodes[i].UserID == nil {
+			continue
+		}
+		fk := *nodes[i].UserID
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(user.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "user_id" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 
 func (_q *NamespaceQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -464,6 +534,9 @@ func (_q *NamespaceQuery) querySpec() *sqlgraph.QuerySpec {
 			if fields[i] != namespace.FieldID {
 				_spec.Node.Columns = append(_spec.Node.Columns, fields[i])
 			}
+		}
+		if _q.withUser != nil {
+			_spec.Node.AddColumnOnce(namespace.FieldUserID)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {

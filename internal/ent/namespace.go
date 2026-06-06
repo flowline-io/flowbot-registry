@@ -9,6 +9,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/flowline-io/flowbot-registry/internal/ent/namespace"
+	"github.com/flowline-io/flowbot-registry/internal/ent/user"
 )
 
 // Namespace is the model entity for the Namespace schema.
@@ -20,20 +21,23 @@ type Namespace struct {
 	Name string `json:"name,omitempty"`
 	// user or org
 	Type string `json:"type,omitempty"`
+	// UserID holds the value of the "user_id" field.
+	UserID *int `json:"user_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the NamespaceQuery when eager-loading is set.
-	Edges           NamespaceEdges `json:"edges"`
-	user_namespaces *int
-	selectValues    sql.SelectValues
+	Edges        NamespaceEdges `json:"edges"`
+	selectValues sql.SelectValues
 }
 
 // NamespaceEdges holds the relations/edges for other nodes in the graph.
 type NamespaceEdges struct {
 	// Plugins holds the value of the plugins edge.
 	Plugins []*Plugin `json:"plugins,omitempty"`
+	// User holds the value of the user edge.
+	User *User `json:"user,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // PluginsOrErr returns the Plugins value or an error if the edge
@@ -45,17 +49,26 @@ func (e NamespaceEdges) PluginsOrErr() ([]*Plugin, error) {
 	return nil, &NotLoadedError{edge: "plugins"}
 }
 
+// UserOrErr returns the User value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e NamespaceEdges) UserOrErr() (*User, error) {
+	if e.User != nil {
+		return e.User, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: user.Label}
+	}
+	return nil, &NotLoadedError{edge: "user"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Namespace) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case namespace.FieldID:
+		case namespace.FieldID, namespace.FieldUserID:
 			values[i] = new(sql.NullInt64)
 		case namespace.FieldName, namespace.FieldType:
 			values[i] = new(sql.NullString)
-		case namespace.ForeignKeys[0]: // user_namespaces
-			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -89,12 +102,12 @@ func (_m *Namespace) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Type = value.String
 			}
-		case namespace.ForeignKeys[0]:
+		case namespace.FieldUserID:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for edge-field user_namespaces", value)
+				return fmt.Errorf("unexpected type %T for field user_id", values[i])
 			} else if value.Valid {
-				_m.user_namespaces = new(int)
-				*_m.user_namespaces = int(value.Int64)
+				_m.UserID = new(int)
+				*_m.UserID = int(value.Int64)
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -112,6 +125,11 @@ func (_m *Namespace) Value(name string) (ent.Value, error) {
 // QueryPlugins queries the "plugins" edge of the Namespace entity.
 func (_m *Namespace) QueryPlugins() *PluginQuery {
 	return NewNamespaceClient(_m.config).QueryPlugins(_m)
+}
+
+// QueryUser queries the "user" edge of the Namespace entity.
+func (_m *Namespace) QueryUser() *UserQuery {
+	return NewNamespaceClient(_m.config).QueryUser(_m)
 }
 
 // Update returns a builder for updating this Namespace.
@@ -142,6 +160,11 @@ func (_m *Namespace) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("type=")
 	builder.WriteString(_m.Type)
+	builder.WriteString(", ")
+	if v := _m.UserID; v != nil {
+		builder.WriteString("user_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteByte(')')
 	return builder.String()
 }

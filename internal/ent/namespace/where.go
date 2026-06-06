@@ -63,6 +63,11 @@ func Type(v string) predicate.Namespace {
 	return predicate.Namespace(sql.FieldEQ(FieldType, v))
 }
 
+// UserID applies equality check predicate on the "user_id" field. It's identical to UserIDEQ.
+func UserID(v int) predicate.Namespace {
+	return predicate.Namespace(sql.FieldEQ(FieldUserID, v))
+}
+
 // NameEQ applies the EQ predicate on the "name" field.
 func NameEQ(v string) predicate.Namespace {
 	return predicate.Namespace(sql.FieldEQ(FieldName, v))
@@ -193,6 +198,36 @@ func TypeContainsFold(v string) predicate.Namespace {
 	return predicate.Namespace(sql.FieldContainsFold(FieldType, v))
 }
 
+// UserIDEQ applies the EQ predicate on the "user_id" field.
+func UserIDEQ(v int) predicate.Namespace {
+	return predicate.Namespace(sql.FieldEQ(FieldUserID, v))
+}
+
+// UserIDNEQ applies the NEQ predicate on the "user_id" field.
+func UserIDNEQ(v int) predicate.Namespace {
+	return predicate.Namespace(sql.FieldNEQ(FieldUserID, v))
+}
+
+// UserIDIn applies the In predicate on the "user_id" field.
+func UserIDIn(vs ...int) predicate.Namespace {
+	return predicate.Namespace(sql.FieldIn(FieldUserID, vs...))
+}
+
+// UserIDNotIn applies the NotIn predicate on the "user_id" field.
+func UserIDNotIn(vs ...int) predicate.Namespace {
+	return predicate.Namespace(sql.FieldNotIn(FieldUserID, vs...))
+}
+
+// UserIDIsNil applies the IsNil predicate on the "user_id" field.
+func UserIDIsNil() predicate.Namespace {
+	return predicate.Namespace(sql.FieldIsNull(FieldUserID))
+}
+
+// UserIDNotNil applies the NotNil predicate on the "user_id" field.
+func UserIDNotNil() predicate.Namespace {
+	return predicate.Namespace(sql.FieldNotNull(FieldUserID))
+}
+
 // HasPlugins applies the HasEdge predicate on the "plugins" edge.
 func HasPlugins() predicate.Namespace {
 	return predicate.Namespace(func(s *sql.Selector) {
@@ -208,6 +243,29 @@ func HasPlugins() predicate.Namespace {
 func HasPluginsWith(preds ...predicate.Plugin) predicate.Namespace {
 	return predicate.Namespace(func(s *sql.Selector) {
 		step := newPluginsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasUser applies the HasEdge predicate on the "user" edge.
+func HasUser() predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, UserTable, UserColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasUserWith applies the HasEdge predicate on the "user" edge with a given conditions (other predicates).
+func HasUserWith(preds ...predicate.User) predicate.Namespace {
+	return predicate.Namespace(func(s *sql.Selector) {
+		step := newUserStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

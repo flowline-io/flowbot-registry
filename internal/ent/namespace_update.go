@@ -13,6 +13,7 @@ import (
 	"github.com/flowline-io/flowbot-registry/internal/ent/namespace"
 	"github.com/flowline-io/flowbot-registry/internal/ent/plugin"
 	"github.com/flowline-io/flowbot-registry/internal/ent/predicate"
+	"github.com/flowline-io/flowbot-registry/internal/ent/user"
 )
 
 // NamespaceUpdate is the builder for updating Namespace entities.
@@ -56,6 +57,26 @@ func (_u *NamespaceUpdate) SetNillableType(v *string) *NamespaceUpdate {
 	return _u
 }
 
+// SetUserID sets the "user_id" field.
+func (_u *NamespaceUpdate) SetUserID(v int) *NamespaceUpdate {
+	_u.mutation.SetUserID(v)
+	return _u
+}
+
+// SetNillableUserID sets the "user_id" field if the given value is not nil.
+func (_u *NamespaceUpdate) SetNillableUserID(v *int) *NamespaceUpdate {
+	if v != nil {
+		_u.SetUserID(*v)
+	}
+	return _u
+}
+
+// ClearUserID clears the value of the "user_id" field.
+func (_u *NamespaceUpdate) ClearUserID() *NamespaceUpdate {
+	_u.mutation.ClearUserID()
+	return _u
+}
+
 // AddPluginIDs adds the "plugins" edge to the Plugin entity by IDs.
 func (_u *NamespaceUpdate) AddPluginIDs(ids ...int) *NamespaceUpdate {
 	_u.mutation.AddPluginIDs(ids...)
@@ -69,6 +90,11 @@ func (_u *NamespaceUpdate) AddPlugins(v ...*Plugin) *NamespaceUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.AddPluginIDs(ids...)
+}
+
+// SetUser sets the "user" edge to the User entity.
+func (_u *NamespaceUpdate) SetUser(v *User) *NamespaceUpdate {
+	return _u.SetUserID(v.ID)
 }
 
 // Mutation returns the NamespaceMutation object of the builder.
@@ -95,6 +121,12 @@ func (_u *NamespaceUpdate) RemovePlugins(v ...*Plugin) *NamespaceUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemovePluginIDs(ids...)
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (_u *NamespaceUpdate) ClearUser() *NamespaceUpdate {
+	_u.mutation.ClearUser()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -202,6 +234,35 @@ func (_u *NamespaceUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.UserCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   namespace.UserTable,
+			Columns: []string{namespace.UserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   namespace.UserTable,
+			Columns: []string{namespace.UserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{namespace.Label}
@@ -250,6 +311,26 @@ func (_u *NamespaceUpdateOne) SetNillableType(v *string) *NamespaceUpdateOne {
 	return _u
 }
 
+// SetUserID sets the "user_id" field.
+func (_u *NamespaceUpdateOne) SetUserID(v int) *NamespaceUpdateOne {
+	_u.mutation.SetUserID(v)
+	return _u
+}
+
+// SetNillableUserID sets the "user_id" field if the given value is not nil.
+func (_u *NamespaceUpdateOne) SetNillableUserID(v *int) *NamespaceUpdateOne {
+	if v != nil {
+		_u.SetUserID(*v)
+	}
+	return _u
+}
+
+// ClearUserID clears the value of the "user_id" field.
+func (_u *NamespaceUpdateOne) ClearUserID() *NamespaceUpdateOne {
+	_u.mutation.ClearUserID()
+	return _u
+}
+
 // AddPluginIDs adds the "plugins" edge to the Plugin entity by IDs.
 func (_u *NamespaceUpdateOne) AddPluginIDs(ids ...int) *NamespaceUpdateOne {
 	_u.mutation.AddPluginIDs(ids...)
@@ -263,6 +344,11 @@ func (_u *NamespaceUpdateOne) AddPlugins(v ...*Plugin) *NamespaceUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.AddPluginIDs(ids...)
+}
+
+// SetUser sets the "user" edge to the User entity.
+func (_u *NamespaceUpdateOne) SetUser(v *User) *NamespaceUpdateOne {
+	return _u.SetUserID(v.ID)
 }
 
 // Mutation returns the NamespaceMutation object of the builder.
@@ -289,6 +375,12 @@ func (_u *NamespaceUpdateOne) RemovePlugins(v ...*Plugin) *NamespaceUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemovePluginIDs(ids...)
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (_u *NamespaceUpdateOne) ClearUser() *NamespaceUpdateOne {
+	_u.mutation.ClearUser()
+	return _u
 }
 
 // Where appends a list predicates to the NamespaceUpdate builder.
@@ -419,6 +511,35 @@ func (_u *NamespaceUpdateOne) sqlSave(ctx context.Context) (_node *Namespace, er
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(plugin.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.UserCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   namespace.UserTable,
+			Columns: []string{namespace.UserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.UserIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   namespace.UserTable,
+			Columns: []string{namespace.UserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

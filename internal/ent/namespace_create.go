@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/flowline-io/flowbot-registry/internal/ent/namespace"
 	"github.com/flowline-io/flowbot-registry/internal/ent/plugin"
+	"github.com/flowline-io/flowbot-registry/internal/ent/user"
 )
 
 // NamespaceCreate is the builder for creating a Namespace entity.
@@ -29,6 +30,20 @@ func (_c *NamespaceCreate) SetName(v string) *NamespaceCreate {
 // SetType sets the "type" field.
 func (_c *NamespaceCreate) SetType(v string) *NamespaceCreate {
 	_c.mutation.SetType(v)
+	return _c
+}
+
+// SetUserID sets the "user_id" field.
+func (_c *NamespaceCreate) SetUserID(v int) *NamespaceCreate {
+	_c.mutation.SetUserID(v)
+	return _c
+}
+
+// SetNillableUserID sets the "user_id" field if the given value is not nil.
+func (_c *NamespaceCreate) SetNillableUserID(v *int) *NamespaceCreate {
+	if v != nil {
+		_c.SetUserID(*v)
+	}
 	return _c
 }
 
@@ -51,6 +66,11 @@ func (_c *NamespaceCreate) AddPlugins(v ...*Plugin) *NamespaceCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddPluginIDs(ids...)
+}
+
+// SetUser sets the "user" edge to the User entity.
+func (_c *NamespaceCreate) SetUser(v *User) *NamespaceCreate {
+	return _c.SetUserID(v.ID)
 }
 
 // Mutation returns the NamespaceMutation object of the builder.
@@ -157,6 +177,23 @@ func (_c *NamespaceCreate) createSpec() (*Namespace, *sqlgraph.CreateSpec) {
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.UserIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   namespace.UserTable,
+			Columns: []string{namespace.UserColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(user.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.UserID = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
