@@ -37,4 +37,4 @@ go.work.sum
 # Secrets
 private.pem
 config.yaml
-server
+/server

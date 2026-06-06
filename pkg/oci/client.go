@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"maps"
 	"strings"
 
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -79,9 +80,7 @@ func ExtractLayers(img v1.Image, fileNames []string) ([]LayerFile, error) {
 			continue
 		}
 
-		for k, v := range contents {
-			found[k] = v
-		}
+		maps.Copy(found, contents)
 	}
 
 	var result []LayerFile

@@ -99,9 +99,9 @@ func parseInstallRef(ref string) (string, string, string) {
 		ref = ref[:idx]
 	}
 
-	if idx := strings.Index(ref, "/"); idx >= 0 {
-		namespace = ref[:idx]
-		name = ref[idx+1:]
+	if before, after, ok := strings.Cut(ref, "/"); ok {
+		namespace = before
+		name = after
 	} else {
 		namespace = "default"
 		name = ref
