@@ -1,12 +1,64 @@
 {
+  "distSpecVersion": "1.1.0-dev",
   "storage": {
-    "rootDirectory": "/var/lib/registry"
+    "rootDirectory": "/var/lib/registry",
+    "dedupe": true,
+    "gc": true,
+    "gcDelay": "1h",
+    "gcInterval": "24h",
+    "commit": true
   },
   "http": {
     "address": "0.0.0.0",
-    "port": "5000"
+    "port": "5000",
+    "realm": "flowbot-registry",
+    "tls": null,
+    "auth": {
+      "bearer": {
+        "realm": "http://127.0.0.1:8128/api/v1/auth/token",
+        "service": "flowbot-registry",
+        "cert": "/etc/zot/flowbot-registry.pub"
+      },
+      "failDelay": 5
+    },
+    "accessControl": {
+      "repositories": {
+        "**": {
+          "anonymousPolicy": ["read"]
+        }
+      }
+    },
+    "readTimeout": "30s",
+    "writeTimeout": "60s"
   },
   "log": {
-    "level": "debug"
+    "level": "debug",
+    "output": "stdout"
+  },
+  "extensions": {
+    "metrics": {
+      "enable": true,
+      "prometheus": {
+        "path": "/metrics"
+      }
+    },
+    "search": {
+      "enable": true,
+      "cve": {
+        "updateInterval": "24h"
+      }
+    },
+    "scrub": {
+      "enable": true,
+      "interval": "24h"
+    },
+    "lint": {
+      "enable": true,
+      "mandatoryAnnotations": [
+        "org.opencontainers.image.created",
+        "org.opencontainers.image.version",
+        "org.opencontainers.image.title"
+      ]
+    }
   }
 }

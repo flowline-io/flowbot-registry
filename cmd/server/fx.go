@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"strings"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -50,6 +51,7 @@ func newViper() *viper.Viper {
 	v.SetDefault("auth.jwt_issuer", "flowbot-registry")
 	v.SetDefault("registry.url", "http://localhost:5000")
 
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	v.AutomaticEnv()
 
 	if err := v.ReadInConfig(); err != nil {

@@ -38,3 +38,4 @@ go.work.sum
 private.pem
 config.yaml
 /server
+docs/flowbot-registry.pub

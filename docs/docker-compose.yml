@@ -2,11 +2,24 @@ services:
   zot:
     image: ghcr.io/project-zot/zot:latest
     ports:
-      - "5000:5000"
+      - '5000:5000'
+    # Before starting: generate public key from private.pem
+    #   openssl rsa -in ../private.pem -pubout -out ./flowbot-registry.pub
     volumes:
       - ./zot-config.json:/etc/zot/config.json:ro
+      - ./flowbot-registry.pub:/etc/zot/flowbot-registry.pub:ro
       - zot-data:/var/lib/registry
+    environment:
+      - TZ=Asia/Shanghai
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1g
+          cpus: '2'
+        reservations:
+          memory: 256m
+          cpus: '0.5'
 
 volumes:
   zot-data:
