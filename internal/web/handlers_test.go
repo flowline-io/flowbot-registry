@@ -158,3 +158,90 @@ func (m *mockStore) PluginVersionGetByPluginAndVersion(_ context.Context, _ int,
 	}
 	return nil, store.ErrNotFound
 }
+
+func TestDetailPage(t *testing.T) {
+	tests := []struct {
+		name       string
+		namespace  string
+		pluginName string
+		mock       *mockStore
+		wantStatus int
+		wantBody   []string
+	}{
+		{
+			name:       "happy path renders plugin detail",
+			namespace:  "testns",
+			pluginName: "test-plugin",
+			mock: &mockStore{
+				namespaces: map[int]*store.NamespaceRecord{
+					1: {ID: 1, Name: "testns", Type: "user"},
+				},
+				plugins: []store.PluginRecord{
+					{ID: 1, NamespaceID: 1, Name: "test-plugin", DisplayName: "Test Plugin", Description: "A test plugin"},
+				},
+				versions: []store.PluginVersionRecord{
+					{ID: 1, PluginID: 1, Version: "2.0.0", ReadmeHTML: "<p>v2 readme</p>", ManifestJSON: map[string]any{"name": "test-plugin"}},
+					{ID: 2, PluginID: 1, Version: "1.0.0", ReadmeHTML: "<p>v1 readme</p>", ManifestJSON: map[string]any{"name": "test-plugin"}},
+				},
+			},
+			wantStatus: http.StatusOK,
+			wantBody:   []string{"Test Plugin", "testns", "A test plugin", "2.0.0", "v2 readme", "1.0.0"},
+		},
+		{
+			name:       "namespace not found",
+			namespace:  "nonexistent",
+			pluginName: "some-plugin",
+			mock: &mockStore{
+				namespaces: map[int]*store.NamespaceRecord{},
+			},
+			wantStatus: http.StatusNotFound,
+			wantBody:   []string{"Not Found", "nonexistent", "Back to Home"},
+		},
+		{
+			name:       "plugin not found",
+			namespace:  "testns",
+			pluginName: "nonexistent",
+			mock: &mockStore{
+				namespaces: map[int]*store.NamespaceRecord{
+					1: {ID: 1, Name: "testns", Type: "user"},
+				},
+				plugins: []store.PluginRecord{},
+			},
+			wantStatus: http.StatusNotFound,
+			wantBody:   []string{"Not Found", "nonexistent", "Back to Home"},
+		},
+		{
+			name:       "store error",
+			namespace:  "testns",
+			pluginName: "test-plugin",
+			mock: &mockStore{
+				namespaces: map[int]*store.NamespaceRecord{
+					1: {ID: 1, Name: "testns", Type: "user"},
+				},
+				plugins: []store.PluginRecord{
+					{ID: 1, NamespaceID: 1, Name: "test-plugin"},
+				},
+				listVersionsErr: errors.New("database connection failed"),
+			},
+			wantStatus: http.StatusInternalServerError,
+			wantBody:   []string{"Something went wrong"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app := setupTestApp(tt.mock)
+			req := httptest.NewRequest(http.MethodGet, "/"+tt.namespace+"/"+tt.pluginName, nil)
+			resp, err := app.Test(req)
+			require.NoError(t, err)
+			defer resp.Body.Close()
+
+			assert.Equal(t, tt.wantStatus, resp.StatusCode)
+			body, err := io.ReadAll(resp.Body)
+			require.NoError(t, err)
+			for _, s := range tt.wantBody {
+				assert.Contains(t, string(body), s)
+			}
+		})
+	}
+}

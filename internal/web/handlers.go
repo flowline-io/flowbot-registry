@@ -1,6 +1,7 @@
 package web
 
 import (
+	"errors"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -52,6 +53,49 @@ func BrowsePage(s store.StoreQuerier) fiber.Handler {
 	}
 }
 
+// DetailPage handles GET /:namespace/:name — plugin detail with versions and README.
+func DetailPage(s store.StoreQuerier) fiber.Handler {
+	return func(c fiber.Ctx) error {
+		namespace := c.Params("namespace")
+		name := c.Params("name")
+
+		ns, err := s.NamespaceGetByName(c.Context(), namespace)
+		if err != nil {
+			slog.Warn("detail: namespace not found", "namespace", namespace, "error", err)
+			if errors.Is(err, store.ErrNotFound) {
+				c.Status(http.StatusNotFound)
+				return Render(c, templates.LayoutNotFound("namespace `" + namespace + "` not found"))
+			}
+			return errorPage(c, http.StatusInternalServerError, "Something went wrong. Please try again later.")
+		}
+
+		p, err := s.PluginGetByNamespaceAndName(c.Context(), ns.ID, name)
+		if err != nil {
+			slog.Warn("detail: plugin not found", "namespace", namespace, "name", name, "error", err)
+			if errors.Is(err, store.ErrNotFound) {
+				c.Status(http.StatusNotFound)
+				return Render(c, templates.LayoutNotFound("plugin `" + namespace + "/" + name + "` not found"))
+			}
+			return errorPage(c, http.StatusInternalServerError, "Something went wrong. Please try again later.")
+		}
+
+		versions, err := s.PluginVersionListByPlugin(c.Context(), p.ID)
+		if err != nil {
+			slog.Error("detail: list versions failed", "error", err)
+			return errorPage(c, http.StatusInternalServerError, "Something went wrong. Please try again later.")
+		}
+
+		if len(versions) == 0 {
+			slog.Warn("detail: no versions found", "plugin_id", p.ID)
+			return errorPage(c, http.StatusInternalServerError, "Something went wrong. Please try again later.")
+		}
+
+		activeVersion := &versions[0]
+
+		return Render(c, pages.DetailPage(*p, ns.Name, versions, activeVersion))
+	}
+}
+
 // errorPage renders a full-page error response.
 func errorPage(c fiber.Ctx, status int, message string) error {
 	c.Status(status)
@@ -65,4 +109,5 @@ func RegisterWebRoutes(app *fiber.App, s store.StoreQuerier) {
 	app.Get("/web/versions/:namespace/:name/:version", VersionReadmeFragment(s))
 
 	app.Get("/", BrowsePage(s))
+	app.Get("/:namespace/:name", DetailPage(s))
 }

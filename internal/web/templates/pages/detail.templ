@@ -1,0 +1,39 @@
+package pages
+
+import (
+	"github.com/flowline-io/flowbot-registry/internal/web/templates"
+	"github.com/flowline-io/flowbot-registry/internal/web/templates/components"
+	"github.com/flowline-io/flowbot-registry/pkg/store"
+)
+
+templ DetailPage(p store.PluginRecord, nsName string, versions []store.PluginVersionRecord, activeVersion *store.PluginVersionRecord) {
+	@templates.Layout() {
+		<div class="text-sm breadcrumbs mb-4">
+			<ul>
+				<li><a href="/">Home</a></li>
+				<li><a href={ "/" + nsName }>{ nsName }</a></li>
+				<li>{ p.Name }</li>
+			</ul>
+		</div>
+		<div class="flex flex-col lg:flex-row gap-8">
+			<aside class="lg:w-48 shrink-0">
+				@components.VersionList(versions, nsName, p.Name, activeVersion.Version)
+			</aside>
+			<main class="flex-1 min-w-0">
+				<div class="mb-6">
+					if p.DisplayName != "" {
+						<h1 class="text-3xl font-bold">{ p.DisplayName }</h1>
+					} else {
+						<h1 class="text-3xl font-bold">{ p.Name }</h1>
+					}
+					<div class="badge badge-outline mt-2">{ nsName }</div>
+				</div>
+				if p.Description != "" {
+					<p class="text-lg text-base-content/70 mb-6">{ p.Description }</p>
+					<div class="divider"></div>
+				}
+				@components.ReadmeRender(activeVersion.Version, activeVersion.ReadmeHTML, activeVersion.ManifestJSON)
+			</main>
+		</div>
+	}
+}

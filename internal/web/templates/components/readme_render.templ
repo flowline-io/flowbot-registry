@@ -2,7 +2,19 @@ package components
 
 templ ReadmeRender(version string, readmeHTML string, manifest map[string]any) {
 	<div id="readme-content">
-		<div class="badge badge-lg">{ version }</div>
-		@templ.Raw(readmeHTML)
+		<div class="flex items-center gap-3 mb-4">
+			<div class="badge badge-lg">{ version }</div>
+			if author, ok := manifest["author"]; ok {
+				if authorStr, ok2 := author.(string); ok2 && authorStr != "" {
+					<div class="text-sm text-base-content/60">by { authorStr }</div>
+				}
+			}
+		</div>
+		<div class="divider"></div>
+		if readmeHTML != "" {
+			@templ.Raw(readmeHTML)
+		} else {
+			<div class="text-base-content/60 italic">No README provided for this version.</div>
+		}
 	</div>
 }
