@@ -50,7 +50,7 @@ func TestSearchFragment(t *testing.T) {
 			mock: &mockStore{
 				listPluginsErr: store.ErrNotFound,
 			},
-			wantStatus: http.StatusInternalServerError,
+			wantStatus: http.StatusOK,
 			wantBody:   []string{"Something went wrong"},
 		},
 	}
@@ -116,7 +116,7 @@ func TestPluginGridFragment(t *testing.T) {
 			mock: &mockStore{
 				listPluginsErr: store.ErrNotFound,
 			},
-			wantStatus: http.StatusInternalServerError,
+			wantStatus: http.StatusOK,
 			wantBody:   []string{"Something went wrong"},
 		},
 	}

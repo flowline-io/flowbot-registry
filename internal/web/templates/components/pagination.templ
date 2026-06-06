@@ -1,12 +1,26 @@
 package components
 
-import "fmt"
+import (
+	"fmt"
+	"net/url"
+)
 
-templ LoadMoreButton(offset int, limit int, total int, query string) {
+func nextPageURL(offset, limit int, query, ns string) string {
+	u := fmt.Sprintf("/web/plugins?offset=%d&limit=%d", offset+limit, limit)
+	if query != "" {
+		u += "&q=" + url.QueryEscape(query)
+	}
+	if ns != "" {
+		u += "&ns=" + url.QueryEscape(ns)
+	}
+	return u
+}
+
+templ LoadMoreButton(offset int, limit int, total int, query string, ns string) {
 	if offset+limit < total {
 		<div class="flex justify-center mt-8" id="load-more-container">
 			<button class="btn btn-outline"
-			        hx-get={ fmt.Sprintf("/web/plugins?offset=%d&limit=%d&q=%s", offset+limit, limit, query) }
+			        hx-get={ nextPageURL(offset, limit, query, ns) }
 			        hx-trigger="click"
 			        hx-target="this"
 			        hx-swap="outerHTML">

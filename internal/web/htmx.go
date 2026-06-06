@@ -4,7 +4,6 @@ import (
 	"context"
 	"io"
 	"log/slog"
-	"net/http"
 
 	"github.com/a-h/templ"
 	"github.com/flowline-io/flowbot-registry/internal/web/templates/components"
@@ -21,11 +20,15 @@ func SearchFragment(s store.StoreQuerier) fiber.Handler {
 		plugins, total, err := s.PluginList(c.Context(), query, limit, offset)
 		if err != nil {
 			slog.Error("search fragment: list plugins failed", "error", err)
-			return errorPage(c, http.StatusInternalServerError, "Something went wrong. Please try again later.")
+			return Render(c, components.AlertError("Something went wrong. Please try again later."))
+		}
+
+		if len(plugins) == 0 {
+			return Render(c, components.SearchEmptyState(query))
 		}
 
 		namespaceNames := resolveNamespaces(c, s, plugins)
-		return Render(c, browseFragment(plugins, namespaceNames, total, limit, offset, query))
+		return Render(c, pluginGrid(plugins, namespaceNames, total, limit, offset, query, ""))
 	}
 }
 
@@ -33,25 +36,30 @@ func SearchFragment(s store.StoreQuerier) fiber.Handler {
 func PluginGridFragment(s store.StoreQuerier) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		query := c.Query("q", "")
+		nsParam := c.Query("ns", "")
 		limit, offset := parsePagination(c)
 
-		plugins, total, err := s.PluginList(c.Context(), query, limit, offset)
+		var plugins []store.PluginRecord
+		var total int
+		var err error
+
+		if nsParam != "" {
+			ns, nsErr := s.NamespaceGetByName(c.Context(), nsParam)
+			if nsErr != nil {
+				slog.Error("plugin grid fragment: namespace not found", "ns", nsParam, "error", nsErr)
+				return Render(c, components.AlertError("Something went wrong. Please try again later."))
+			}
+			plugins, total, err = s.PluginListByNamespace(c.Context(), ns.ID, query, limit, offset)
+		} else {
+			plugins, total, err = s.PluginList(c.Context(), query, limit, offset)
+		}
 		if err != nil {
 			slog.Error("plugin grid fragment: list plugins failed", "error", err)
-			return errorPage(c, http.StatusInternalServerError, "Something went wrong. Please try again later.")
+			return Render(c, components.AlertError("Something went wrong. Please try again later."))
 		}
 
 		namespaceNames := resolveNamespaces(c, s, plugins)
-
-		var parts []templ.Component
-		for _, p := range plugins {
-			parts = append(parts, components.PluginCard(namespaceNames[p.NamespaceID], p.Name, p.DisplayName, p.Description, p.LogoURL))
-		}
-		if offset+limit < total {
-			parts = append(parts, components.LoadMoreButton(offset, limit, total, query))
-		}
-
-		return Render(c, htmxComponentList(parts))
+		return Render(c, pluginGrid(plugins, namespaceNames, total, limit, offset, query, nsParam))
 	}
 }
 
@@ -100,6 +108,34 @@ func resolveNamespaces(c fiber.Ctx, s store.StoreQuerier, plugins []store.Plugin
 	return names
 }
 
+// pluginGrid renders a grid of plugin cards with optional load-more button.
+func pluginGrid(plugins []store.PluginRecord, namespaceNames map[int]string, total, limit, offset int, query, nsParam string) templ.Component {
+	var parts []templ.Component
+
+	gridStart := `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">`
+	gridEnd := `</div>`
+
+	parts = append(parts, templ.ComponentFunc(func(_ context.Context, w io.Writer) error {
+		_, err := io.WriteString(w, gridStart)
+		return err
+	}))
+
+	for _, p := range plugins {
+		parts = append(parts, components.PluginCard(namespaceNames[p.NamespaceID], p.Name, p.DisplayName, p.Description, p.LogoURL))
+	}
+
+	parts = append(parts, templ.ComponentFunc(func(_ context.Context, w io.Writer) error {
+		_, err := io.WriteString(w, gridEnd)
+		return err
+	}))
+
+	if offset+limit < total {
+		parts = append(parts, components.LoadMoreButton(offset, limit, total, query, nsParam))
+	}
+
+	return htmxComponentList(parts)
+}
+
 // htmxComponentList renders a list of components sequentially.
 func htmxComponentList(list []templ.Component) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, w io.Writer) error {
@@ -110,23 +146,4 @@ func htmxComponentList(list []templ.Component) templ.Component {
 		}
 		return nil
 	})
-}
-
-// browseFragment renders the plugin grid fragment used by SearchFragment.
-func browseFragment(plugins []store.PluginRecord, namespaceNames map[int]string, total, limit, offset int, query string) templ.Component {
-	if len(plugins) == 0 {
-		return templ.ComponentFunc(func(_ context.Context, w io.Writer) error {
-			_, err := io.WriteString(w, `<div class="flex flex-col items-center justify-center py-8 text-center"><p class="text-base-content/60">No plugins matching "`+query+`". Try a different search term.</p></div>`)
-			return err
-		})
-	}
-
-	var parts []templ.Component
-	for _, p := range plugins {
-		parts = append(parts, components.PluginCard(namespaceNames[p.NamespaceID], p.Name, p.DisplayName, p.Description, p.LogoURL))
-	}
-	if offset+limit < total {
-		parts = append(parts, components.LoadMoreButton(offset, limit, total, query))
-	}
-	return htmxComponentList(parts)
 }

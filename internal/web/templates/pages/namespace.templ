@@ -33,7 +33,7 @@ templ NamespacePage(nsName string, nsType string, plugins []store.PluginRecord, 
 						</div>
 					}
 				</div>
-				@components.LoadMoreButton(offset, limit, total, "")
+				@components.LoadMoreButton(offset, limit, total, "", nsName)
 			</div>
 		}
 	}

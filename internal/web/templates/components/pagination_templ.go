@@ -8,9 +8,23 @@ package components
 import "github.com/a-h/templ"
 import templruntime "github.com/a-h/templ/runtime"
 
-import "fmt"
+import (
+	"fmt"
+	"net/url"
+)
 
-func LoadMoreButton(offset int, limit int, total int, query string) templ.Component {
+func nextPageURL(offset, limit int, query, ns string) string {
+	u := fmt.Sprintf("/web/plugins?offset=%d&limit=%d", offset+limit, limit)
+	if query != "" {
+		u += "&q=" + url.QueryEscape(query)
+	}
+	if ns != "" {
+		u += "&ns=" + url.QueryEscape(ns)
+	}
+	return u
+}
+
+func LoadMoreButton(offset int, limit int, total int, query string, ns string) templ.Component {
 	return templruntime.GeneratedTemplate(func(templ_7745c5c3_Input templruntime.GeneratedComponentInput) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_W, ctx := templ_7745c5c3_Input.Writer, templ_7745c5c3_Input.Context
 		if templ_7745c5c3_CtxErr := ctx.Err(); templ_7745c5c3_CtxErr != nil {
@@ -37,9 +51,9 @@ func LoadMoreButton(offset int, limit int, total int, query string) templ.Compon
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var2 string
-			templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.ResolveAttributeValue(fmt.Sprintf("/web/plugins?offset=%d&limit=%d&q=%s", offset+limit, limit, query))
+			templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.ResolveAttributeValue(nextPageURL(offset, limit, query, ns))
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/components/pagination.templ`, Line: 9, Col: 99}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `internal/web/templates/components/pagination.templ`, Line: 23, Col: 57}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var2)
 			if templ_7745c5c3_Err != nil {
