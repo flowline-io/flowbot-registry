@@ -1,0 +1,40 @@
+package pages
+
+import (
+	"github.com/flowline-io/flowbot-registry/internal/web/templates"
+	"github.com/flowline-io/flowbot-registry/internal/web/templates/components"
+	"github.com/flowline-io/flowbot-registry/pkg/store"
+)
+
+templ NamespacePage(nsName string, nsType string, plugins []store.PluginRecord, total int, limit int, offset int) {
+	@templates.Layout() {
+		<div class="text-sm breadcrumbs mb-4">
+			<ul>
+				<li><a href="/">Home</a></li>
+				<li>{ nsName }</li>
+			</ul>
+		</div>
+		<div class="mb-6">
+			<h1 class="text-3xl font-bold">{ nsName }</h1>
+			<div class="badge badge-outline mt-2">{ nsType }</div>
+		</div>
+		if len(plugins) == 0 {
+			<div class="flex flex-col items-center justify-center py-16 text-center">
+				<div class="text-5xl mb-4 opacity-30">+</div>
+				<h2 class="text-xl font-semibold mb-2">No plugins</h2>
+				<p class="text-base-content/60">This namespace has no published plugins yet.</p>
+			</div>
+		} else {
+			<div id="plugin-grid">
+				<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+					for _, p := range plugins {
+						<div>
+							@components.PluginCard(nsName, p.Name, p.DisplayName, p.Description, p.LogoURL)
+						</div>
+					}
+				</div>
+				@components.LoadMoreButton(offset, limit, total, "")
+			</div>
+		}
+	}
+}

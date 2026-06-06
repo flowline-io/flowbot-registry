@@ -159,6 +159,84 @@ func (m *mockStore) PluginVersionGetByPluginAndVersion(_ context.Context, _ int,
 	return nil, store.ErrNotFound
 }
 
+func TestNamespacePage(t *testing.T) {
+	tests := []struct {
+		name       string
+		namespace  string
+		mock       *mockStore
+		wantStatus int
+		wantBody   []string
+	}{
+		{
+			name:      "happy path with plugins",
+			namespace: "testns",
+			mock: &mockStore{
+				namespaces: map[int]*store.NamespaceRecord{
+					1: {ID: 1, Name: "testns", Type: "user"},
+				},
+				plugins: []store.PluginRecord{
+					{ID: 1, NamespaceID: 1, Name: "test-plugin", DisplayName: "Test Plugin", Description: "A test plugin"},
+				},
+				pluginTotal: 1,
+			},
+			wantStatus: http.StatusOK,
+			wantBody:   []string{"testns", "user", "Test Plugin"},
+		},
+		{
+			name:      "empty namespace",
+			namespace: "emptyns",
+			mock: &mockStore{
+				namespaces: map[int]*store.NamespaceRecord{
+					2: {ID: 2, Name: "emptyns", Type: "org"},
+				},
+				plugins:     []store.PluginRecord{},
+				pluginTotal: 0,
+			},
+			wantStatus: http.StatusOK,
+			wantBody:   []string{"emptyns", "org", "No plugins"},
+		},
+		{
+			name:      "namespace not found",
+			namespace: "nonexistent",
+			mock: &mockStore{
+				namespaces: map[int]*store.NamespaceRecord{},
+			},
+			wantStatus: http.StatusNotFound,
+			wantBody:   []string{"Not Found", "nonexistent", "Back to Home"},
+		},
+		{
+			name:      "store error",
+			namespace: "testns",
+			mock: &mockStore{
+				namespaces: map[int]*store.NamespaceRecord{
+					1: {ID: 1, Name: "testns", Type: "user"},
+				},
+				plugins:        []store.PluginRecord{},
+				listPluginsErr: errors.New("database connection failed"),
+			},
+			wantStatus: http.StatusInternalServerError,
+			wantBody:   []string{"Something went wrong"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			app := setupTestApp(tt.mock)
+			req := httptest.NewRequest(http.MethodGet, "/"+tt.namespace, nil)
+			resp, err := app.Test(req)
+			require.NoError(t, err)
+			defer resp.Body.Close()
+
+			assert.Equal(t, tt.wantStatus, resp.StatusCode)
+			body, err := io.ReadAll(resp.Body)
+			require.NoError(t, err)
+			for _, s := range tt.wantBody {
+				assert.Contains(t, string(body), s)
+			}
+		})
+	}
+}
+
 func TestDetailPage(t *testing.T) {
 	tests := []struct {
 		name       string

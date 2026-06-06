@@ -96,6 +96,32 @@ func DetailPage(s store.StoreQuerier) fiber.Handler {
 	}
 }
 
+// NamespacePage handles GET /:namespace — all plugins in a namespace.
+func NamespacePage(s store.StoreQuerier) fiber.Handler {
+	return func(c fiber.Ctx) error {
+		namespace := c.Params("namespace")
+		limit, offset := parsePagination(c)
+
+		ns, err := s.NamespaceGetByName(c.Context(), namespace)
+		if err != nil {
+			slog.Warn("namespace page: namespace not found", "namespace", namespace, "error", err)
+			if errors.Is(err, store.ErrNotFound) {
+				c.Status(http.StatusNotFound)
+				return Render(c, templates.LayoutNotFound("namespace `" + namespace + "` not found"))
+			}
+			return errorPage(c, http.StatusInternalServerError, "Something went wrong. Please try again later.")
+		}
+
+		plugins, total, err := s.PluginListByNamespace(c.Context(), ns.ID, "", limit, offset)
+		if err != nil {
+			slog.Error("namespace page: list plugins failed", "error", err)
+			return errorPage(c, http.StatusInternalServerError, "Something went wrong. Please try again later.")
+		}
+
+		return Render(c, pages.NamespacePage(ns.Name, ns.Type, plugins, total, limit, offset))
+	}
+}
+
 // errorPage renders a full-page error response.
 func errorPage(c fiber.Ctx, status int, message string) error {
 	c.Status(status)
@@ -109,5 +135,6 @@ func RegisterWebRoutes(app *fiber.App, s store.StoreQuerier) {
 	app.Get("/web/versions/:namespace/:name/:version", VersionReadmeFragment(s))
 
 	app.Get("/", BrowsePage(s))
+	app.Get("/:namespace", NamespacePage(s))
 	app.Get("/:namespace/:name", DetailPage(s))
 }
