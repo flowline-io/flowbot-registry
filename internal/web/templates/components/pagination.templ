@@ -1,0 +1,17 @@
+package components
+
+import "fmt"
+
+templ LoadMoreButton(offset int, limit int, total int, query string) {
+	if offset+limit < total {
+		<div class="flex justify-center mt-8" id="load-more-container">
+			<button class="btn btn-outline"
+			        hx-get={ fmt.Sprintf("/web/plugins?offset=%d&limit=%d&q=%s", offset+limit, limit, query) }
+			        hx-trigger="click"
+			        hx-target="this"
+			        hx-swap="outerHTML">
+				Load More
+			</button>
+		</div>
+	}
+}

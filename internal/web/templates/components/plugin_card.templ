@@ -1,0 +1,43 @@
+package components
+
+templ PluginCard(namespaceName string, name string, displayName string, description string, logoURL string) {
+	<a href={ "/" + namespaceName + "/" + name } class="card bg-base-100 shadow-sm hover:shadow-md transition-shadow">
+		<div class="card-body p-5">
+			<div class="flex items-start gap-3">
+				if logoURL != "" {
+					<figure class="w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-base-300">
+						<img src={ logoURL } alt={ displayName } class="w-full h-full object-cover"/>
+					</figure>
+				} else {
+					<div class="w-12 h-12 rounded-lg shrink-0 bg-primary/10 flex items-center justify-center">
+						<span class="text-primary font-bold text-lg">{ initial(displayName, name) }</span>
+					</div>
+				}
+				<div class="min-w-0">
+					<h2 class="card-title text-base">
+						if displayName != "" {
+							{ displayName }
+						} else {
+							{ name }
+						}
+					</h2>
+					<div class="badge badge-sm badge-outline">{ namespaceName }</div>
+				</div>
+			</div>
+			if description != "" {
+				<p class="text-sm text-base-content/70 line-clamp-2 mt-2">{ description }</p>
+			}
+		</div>
+	</a>
+}
+
+func initial(displayName, name string) string {
+	fallback := name
+	if displayName != "" {
+		fallback = displayName
+	}
+	if len(fallback) > 0 {
+		return string([]rune(fallback)[0:1])
+	}
+	return "?"
+}
