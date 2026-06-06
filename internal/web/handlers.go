@@ -60,5 +60,9 @@ func errorPage(c fiber.Ctx, status int, message string) error {
 
 // RegisterWebRoutes registers all web UI routes on the Fiber app.
 func RegisterWebRoutes(app *fiber.App, s store.StoreQuerier) {
+	app.Get("/web/search", SearchFragment(s))
+	app.Get("/web/plugins", PluginGridFragment(s))
+	app.Get("/web/versions/:namespace/:name/:version", VersionReadmeFragment(s))
+
 	app.Get("/", BrowsePage(s))
 }

@@ -1,0 +1,8 @@
+package components
+
+templ ReadmeRender(version string, readmeHTML string, manifest map[string]any) {
+	<div id="readme-content">
+		<div class="badge badge-lg">{ version }</div>
+		@templ.Raw(readmeHTML)
+	</div>
+}
