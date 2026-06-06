@@ -38,6 +38,20 @@ type PluginVersionRecord struct {
 	ManifestJSON map[string]any `json:"manifest_json"`
 }
 
+// StoreQuerier defines read operations for plugin store queries.
+// Adapter implements this interface, enabling mock injection in tests.
+type StoreQuerier interface {
+	NamespaceGetByName(ctx context.Context, name string) (*NamespaceRecord, error)
+	NamespaceGetByID(ctx context.Context, id int) (*NamespaceRecord, error)
+	PluginGetByNamespaceAndName(ctx context.Context, namespaceID int, name string) (*PluginRecord, error)
+	PluginList(ctx context.Context, query string, limit, offset int) ([]PluginRecord, int, error)
+	PluginListByNamespace(ctx context.Context, namespaceID int, query string, limit, offset int) ([]PluginRecord, int, error)
+	PluginVersionListByPlugin(ctx context.Context, pluginID int) ([]PluginVersionRecord, error)
+	PluginVersionGetByPluginAndVersion(ctx context.Context, pluginID int, version string) (*PluginVersionRecord, error)
+}
+
+var _ StoreQuerier = (*Adapter)(nil)
+
 // Adapter provides data access operations backed by the ent client.
 type Adapter struct {
 	client *ent.Client
