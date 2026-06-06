@@ -3,10 +3,14 @@
 package ent
 
 import (
+	"time"
+
 	"github.com/flowline-io/flowbot-registry/internal/ent/namespace"
 	"github.com/flowline-io/flowbot-registry/internal/ent/plugin"
 	"github.com/flowline-io/flowbot-registry/internal/ent/pluginversion"
+	"github.com/flowline-io/flowbot-registry/internal/ent/refreshtoken"
 	"github.com/flowline-io/flowbot-registry/internal/ent/schema"
+	"github.com/flowline-io/flowbot-registry/internal/ent/user"
 )
 
 // The init function reads all schema descriptors with runtime code
@@ -63,4 +67,34 @@ func init() {
 	pluginversionDescManifestJSON := pluginversionFields[6].Descriptor()
 	// pluginversion.DefaultManifestJSON holds the default value on creation for the manifest_json field.
 	pluginversion.DefaultManifestJSON = pluginversionDescManifestJSON.Default.(map[string]interface{})
+	refreshtokenFields := schema.RefreshToken{}.Fields()
+	_ = refreshtokenFields
+	// refreshtokenDescToken is the schema descriptor for token field.
+	refreshtokenDescToken := refreshtokenFields[1].Descriptor()
+	// refreshtoken.TokenValidator is a validator for the "token" field. It is called by the builders before save.
+	refreshtoken.TokenValidator = refreshtokenDescToken.Validators[0].(func(string) error)
+	// refreshtokenDescCreatedAt is the schema descriptor for created_at field.
+	refreshtokenDescCreatedAt := refreshtokenFields[3].Descriptor()
+	// refreshtoken.DefaultCreatedAt holds the default value on creation for the created_at field.
+	refreshtoken.DefaultCreatedAt = refreshtokenDescCreatedAt.Default.(func() time.Time)
+	userFields := schema.User{}.Fields()
+	_ = userFields
+	// userDescEmail is the schema descriptor for email field.
+	userDescEmail := userFields[1].Descriptor()
+	// user.EmailValidator is a validator for the "email" field. It is called by the builders before save.
+	user.EmailValidator = userDescEmail.Validators[0].(func(string) error)
+	// userDescPasswordHash is the schema descriptor for password_hash field.
+	userDescPasswordHash := userFields[2].Descriptor()
+	// user.PasswordHashValidator is a validator for the "password_hash" field. It is called by the builders before save.
+	user.PasswordHashValidator = userDescPasswordHash.Validators[0].(func(string) error)
+	// userDescCreatedAt is the schema descriptor for created_at field.
+	userDescCreatedAt := userFields[3].Descriptor()
+	// user.DefaultCreatedAt holds the default value on creation for the created_at field.
+	user.DefaultCreatedAt = userDescCreatedAt.Default.(func() time.Time)
+	// userDescUpdatedAt is the schema descriptor for updated_at field.
+	userDescUpdatedAt := userFields[4].Descriptor()
+	// user.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	user.DefaultUpdatedAt = userDescUpdatedAt.Default.(func() time.Time)
+	// user.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	user.UpdateDefaultUpdatedAt = userDescUpdatedAt.UpdateDefault.(func() time.Time)
 }

@@ -13,12 +13,21 @@ var (
 		{Name: "id", Type: field.TypeInt, Increment: true},
 		{Name: "name", Type: field.TypeString, Unique: true},
 		{Name: "type", Type: field.TypeString},
+		{Name: "user_namespaces", Type: field.TypeInt, Nullable: true},
 	}
 	// NamespacesTable holds the schema information for the "namespaces" table.
 	NamespacesTable = &schema.Table{
 		Name:       "namespaces",
 		Columns:    NamespacesColumns,
 		PrimaryKey: []*schema.Column{NamespacesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "namespaces_users_namespaces",
+				Columns:    []*schema.Column{NamespacesColumns[3]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
 	}
 	// PluginsColumns holds the columns for the "plugins" table.
 	PluginsColumns = []*schema.Column{
@@ -82,15 +91,55 @@ var (
 			},
 		},
 	}
+	// RefreshTokensColumns holds the columns for the "refresh_tokens" table.
+	RefreshTokensColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "token", Type: field.TypeString, Unique: true},
+		{Name: "expires_at", Type: field.TypeTime},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "user_refresh_tokens", Type: field.TypeInt, Nullable: true},
+	}
+	// RefreshTokensTable holds the schema information for the "refresh_tokens" table.
+	RefreshTokensTable = &schema.Table{
+		Name:       "refresh_tokens",
+		Columns:    RefreshTokensColumns,
+		PrimaryKey: []*schema.Column{RefreshTokensColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "refresh_tokens_users_refresh_tokens",
+				Columns:    []*schema.Column{RefreshTokensColumns[4]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
+	// UsersColumns holds the columns for the "users" table.
+	UsersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "email", Type: field.TypeString, Unique: true},
+		{Name: "password_hash", Type: field.TypeString},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// UsersTable holds the schema information for the "users" table.
+	UsersTable = &schema.Table{
+		Name:       "users",
+		Columns:    UsersColumns,
+		PrimaryKey: []*schema.Column{UsersColumns[0]},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		NamespacesTable,
 		PluginsTable,
 		PluginVersionsTable,
+		RefreshTokensTable,
+		UsersTable,
 	}
 )
 
 func init() {
+	NamespacesTable.ForeignKeys[0].RefTable = UsersTable
 	PluginsTable.ForeignKeys[0].RefTable = NamespacesTable
 	PluginVersionsTable.ForeignKeys[0].RefTable = PluginsTable
+	RefreshTokensTable.ForeignKeys[0].RefTable = UsersTable
 }

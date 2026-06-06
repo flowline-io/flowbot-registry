@@ -22,8 +22,9 @@ type Namespace struct {
 	Type string `json:"type,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the NamespaceQuery when eager-loading is set.
-	Edges        NamespaceEdges `json:"edges"`
-	selectValues sql.SelectValues
+	Edges           NamespaceEdges `json:"edges"`
+	user_namespaces *int
+	selectValues    sql.SelectValues
 }
 
 // NamespaceEdges holds the relations/edges for other nodes in the graph.
@@ -53,6 +54,8 @@ func (*Namespace) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case namespace.FieldName, namespace.FieldType:
 			values[i] = new(sql.NullString)
+		case namespace.ForeignKeys[0]: // user_namespaces
+			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -85,6 +88,13 @@ func (_m *Namespace) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field type", values[i])
 			} else if value.Valid {
 				_m.Type = value.String
+			}
+		case namespace.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for edge-field user_namespaces", value)
+			} else if value.Valid {
+				_m.user_namespaces = new(int)
+				*_m.user_namespaces = int(value.Int64)
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])

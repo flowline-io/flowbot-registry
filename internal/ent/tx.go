@@ -18,6 +18,10 @@ type Tx struct {
 	Plugin *PluginClient
 	// PluginVersion is the client for interacting with the PluginVersion builders.
 	PluginVersion *PluginVersionClient
+	// RefreshToken is the client for interacting with the RefreshToken builders.
+	RefreshToken *RefreshTokenClient
+	// User is the client for interacting with the User builders.
+	User *UserClient
 
 	// lazily loaded.
 	client     *Client
@@ -152,6 +156,8 @@ func (tx *Tx) init() {
 	tx.Namespace = NewNamespaceClient(tx.config)
 	tx.Plugin = NewPluginClient(tx.config)
 	tx.PluginVersion = NewPluginVersionClient(tx.config)
+	tx.RefreshToken = NewRefreshTokenClient(tx.config)
+	tx.User = NewUserClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.

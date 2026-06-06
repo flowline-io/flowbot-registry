@@ -15,6 +15,8 @@ import (
 	"github.com/flowline-io/flowbot-registry/internal/ent/namespace"
 	"github.com/flowline-io/flowbot-registry/internal/ent/plugin"
 	"github.com/flowline-io/flowbot-registry/internal/ent/pluginversion"
+	"github.com/flowline-io/flowbot-registry/internal/ent/refreshtoken"
+	"github.com/flowline-io/flowbot-registry/internal/ent/user"
 )
 
 // ent aliases to avoid import conflicts in user's code.
@@ -78,6 +80,8 @@ func checkColumn(t, c string) error {
 			namespace.Table:     namespace.ValidColumn,
 			plugin.Table:        plugin.ValidColumn,
 			pluginversion.Table: pluginversion.ValidColumn,
+			refreshtoken.Table:  refreshtoken.ValidColumn,
+			user.Table:          user.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)
