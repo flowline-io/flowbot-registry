@@ -40,7 +40,7 @@ Example:
 		RunE: runSearch,
 	}
 
-	cmd.Flags().StringVar(&searchArgs.storeURL, "store-url", "http://localhost:8080", "Store API URL")
+	cmd.Flags().StringVar(&searchArgs.storeURL, "store-url", "http://localhost:8128", "Store API URL")
 	cmd.Flags().IntVar(&searchArgs.limit, "limit", 20, "Maximum number of results")
 
 	return cmd

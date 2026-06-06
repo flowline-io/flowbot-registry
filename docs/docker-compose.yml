@@ -1,0 +1,12 @@
+services:
+  zot:
+    image: ghcr.io/project-zot/zot:latest
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./zot-config.json:/etc/zot/config.json:ro
+      - zot-data:/var/lib/registry
+    restart: unless-stopped
+
+volumes:
+  zot-data:

@@ -8,7 +8,7 @@
 server:
   # Address for the HTTP API server to listen on.
   # Format: host:port or :port (binds all interfaces).
-  listen: ':8080'
+  listen: ':8128'
 
 # PostgreSQL database connection.
 database:

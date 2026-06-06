@@ -29,7 +29,7 @@ Example:
 		RunE: runInstall,
 	}
 
-	cmd.Flags().StringVar(&installArgs.storeURL, "store-url", "http://localhost:8080", "Store API URL")
+	cmd.Flags().StringVar(&installArgs.storeURL, "store-url", "http://localhost:8128", "Store API URL")
 	cmd.Flags().StringVar(&installArgs.destPath, "dest", "/data/flowbot/plugins", "Destination directory for installed plugins")
 
 	return cmd

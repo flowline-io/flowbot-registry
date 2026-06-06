@@ -86,7 +86,7 @@ See `config.yaml` (not committed, generated from environment variables):
 
 ```yaml
 server:
-  listen: ':8080'
+  listen: ':8128'
 database:
   dsn: postgres://user:pass@host:5432/flowbot_registry?sslmode=disable
 registry:

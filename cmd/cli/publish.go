@@ -32,7 +32,7 @@ a plugin.wasm binary and README.md.`,
 	}
 
 	cmd.Flags().StringVar(&publishArgs.registryURL, "registry-url", "http://localhost:5000", "OCI registry URL")
-	cmd.Flags().StringVar(&publishArgs.storeURL, "store-url", "http://localhost:8080", "Store API URL")
+	cmd.Flags().StringVar(&publishArgs.storeURL, "store-url", "http://localhost:8128", "Store API URL")
 	cmd.Flags().StringVar(&publishArgs.apiKey, "api-key", "", "API key for authentication")
 
 	return cmd

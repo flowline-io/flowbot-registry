@@ -154,7 +154,7 @@ func newViper() *viper.Viper {
     v.SetConfigName("config")
     v.SetConfigType("yaml")
     v.AddConfigPath(".")
-    v.SetDefault("server.listen", ":8080")
+    v.SetDefault("server.listen", ":8128")
     v.SetDefault("auth.jwt_private_key_path", "./private.pem")
     v.SetDefault("auth.jwt_expiration", 3600)
     v.SetDefault("auth.jwt_issuer", "flowbot-registry")
