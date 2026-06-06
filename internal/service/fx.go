@@ -1,9 +1,12 @@
 package service
 
 import (
+	"time"
+
 	"github.com/spf13/viper"
 	"go.uber.org/fx"
 
+	"github.com/flowline-io/flowbot-registry/pkg/jwt"
 	"github.com/flowline-io/flowbot-registry/pkg/oci"
 	"github.com/flowline-io/flowbot-registry/pkg/store"
 )
@@ -18,6 +21,13 @@ var Module = fx.Module("service",
 				url = "http://localhost:5000"
 			}
 			return NewPluginService(a, ociClient, url)
+		},
+		func(a *store.Adapter, jwtSvc *jwt.UserTokenService, v *viper.Viper) *UserService {
+			exp := v.GetInt("auth.refresh_token_expiration")
+			if exp == 0 {
+				exp = 604800
+			}
+			return NewUserService(a, jwtSvc, time.Duration(exp)*time.Second)
 		},
 	),
 )
