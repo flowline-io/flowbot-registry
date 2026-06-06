@@ -33,9 +33,11 @@ go.work.sum
 
 # Build output
 /bin/
+/cli
 
 # Secrets
 private.pem
 config.yaml
 /server
 docs/flowbot-registry.pub
+example/

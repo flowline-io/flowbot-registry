@@ -88,12 +88,12 @@ func GenerateManifestYAML(namespace, name string, runtime RuntimeKind) ([]byte, 
 
 var goModTemplate = `module github.com/%s/%s
 
-go 1.26.0
+go 1.26.4
 
 %s
 `
 
-var grpcRequire = `require github.com/flowline-io/flowbot-registry v0.0.0`
+var grpcRequire = `require github.com/flowline-io/flowbot v0.92.1`
 
 // GenerateGoMod returns a go.mod scaffold for the plugin.
 func GenerateGoMod(namespace, name string, runtime RuntimeKind) []byte {
@@ -129,7 +129,7 @@ func GenerateMainGo(runtime RuntimeKind) []byte {
 
 var serverMainGo = `package main
 
-import "github.com/flowline-io/flowbot-registry/pkg/plugin/sdk"
+import "github.com/flowline-io/flowbot/pkg/plugin/sdk"
 
 type plugin struct {
 	sdk.ModuleBase
