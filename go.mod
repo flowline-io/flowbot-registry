@@ -42,6 +42,7 @@ require (
 	github.com/Masterminds/semver/v3 v3.5.0 // indirect
 	github.com/Masterminds/sprig/v3 v3.3.0 // indirect
 	github.com/STARRY-S/zip v0.2.1 // indirect
+	github.com/a-h/templ v0.3.1020 // indirect
 	github.com/agext/levenshtein v1.2.3 // indirect
 	github.com/alecthomas/chroma/v2 v2.23.1 // indirect
 	github.com/andybalholm/brotli v1.2.1 // indirect
