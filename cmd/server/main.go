@@ -13,6 +13,7 @@ import (
 	"github.com/flowline-io/flowbot-registry/internal/ent"
 	"github.com/flowline-io/flowbot-registry/internal/handler"
 	"github.com/flowline-io/flowbot-registry/internal/service"
+	"github.com/flowline-io/flowbot-registry/internal/web"
 	"github.com/flowline-io/flowbot-registry/pkg/jwt"
 	"github.com/flowline-io/flowbot-registry/pkg/oci"
 	"github.com/flowline-io/flowbot-registry/pkg/store"
@@ -82,6 +83,7 @@ func main() {
 	})
 
 	handler.RegisterRoutes(app, authSvc, pluginSvc)
+	web.RegisterWebRoutes(app, adapter)
 
 	listen := cfg.GetString("server.listen")
 	if listen == "" {

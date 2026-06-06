@@ -1,4 +1,4 @@
-version: "3"
+version: '3'
 tasks:
   default:
     desc: Default task - run common checks
@@ -45,6 +45,7 @@ tasks:
   lint:
     desc: Run static code analysis
     cmds:
+      - oxfmt --check .
       - go tool revive -config revive.toml -formatter friendly ./...
       - task: lint:testify
       - task: lint:action
@@ -60,9 +61,15 @@ tasks:
       - go tool testifylint ./...
 
   format:
-    desc: Format code
+    desc: Format code (oxfmt + go fmt)
     cmds:
+      - oxfmt --write .
       - go fmt ./...
+
+  build:templ:
+    desc: Generate Go code from templ templates
+    cmds:
+      - go run github.com/a-h/templ/cmd/templ@latest generate
 
   tidy:
     desc: Clean up Go module dependencies
