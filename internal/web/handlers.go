@@ -135,6 +135,9 @@ func RegisterWebRoutes(app *fiber.App, s store.StoreQuerier) {
 	app.Get("/web/versions/:namespace/:name/:version", VersionReadmeFragment(s))
 
 	app.Get("/", BrowsePage(s))
+	app.Get("/favicon.ico", func(c fiber.Ctx) error {
+		return c.SendStatus(fiber.StatusNoContent)
+	})
 	app.Get("/:namespace", NamespacePage(s))
 	app.Get("/:namespace/:name", DetailPage(s))
 }
