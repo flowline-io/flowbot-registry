@@ -226,8 +226,7 @@ func (s *PluginService) fetchOCILayers(ctx context.Context, req PublishRequest) 
 
 	var rawManifest, rawReadme []byte
 	for _, lf := range layers {
-		switch lf.Name {
-		case "plugin.yaml":
+		if lf.Name == "plugin.yaml" {
 			rawManifest = lf.Content
 		}
 	}

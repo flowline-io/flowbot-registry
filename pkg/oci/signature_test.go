@@ -8,8 +8,8 @@ import (
 )
 
 func TestPushSignature(t *testing.T) {
-	host, close := setupTestRegistry(t)
-	defer close()
+	host, teardown := setupTestRegistry(t)
+	defer teardown()
 
 	c := NewClient(host)
 
@@ -26,8 +26,8 @@ func TestPushSignature(t *testing.T) {
 }
 
 func TestPushSignatureNoImage(t *testing.T) {
-	host, close := setupTestRegistry(t)
-	defer close()
+	host, teardown := setupTestRegistry(t)
+	defer teardown()
 
 	c := NewClient(host)
 	ref := host + "/test/no-image:v99"

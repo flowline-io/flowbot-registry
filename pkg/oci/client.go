@@ -13,7 +13,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
-	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 )
 
@@ -140,8 +140,8 @@ func ExtractAllLayers(img v1.Image) ([]LayerFile, error) {
 	}
 
 	var result []LayerFile
-	for name, content := range found {
-		result = append(result, LayerFile{Name: name, Content: content})
+		for fileName, content := range found {
+		result = append(result, LayerFile{Name: fileName, Content: content})
 	}
 
 	return result, nil

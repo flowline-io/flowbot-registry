@@ -11,7 +11,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
-	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/empty"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
@@ -87,7 +87,11 @@ func (c *Client) PushArtifact(ctx context.Context, refStr string, files []Artifa
 		"org.opencontainers.image.version": ref.Identifier(),
 		"org.opencontainers.image.title":   ref.Context().RepositoryStr(),
 	}
-	img = mutate.Annotations(img, annotations).(v1.Image)
+	if v, ok := mutate.Annotations(img, annotations).(v1.Image); ok {
+		img = v
+	} else {
+		return v1.Hash{}, fmt.Errorf("annotations: expected v1.Image")
+	}
 
 	remoteOpts := []remote.Option{remote.WithContext(ctx)}
 	if c.plainHTTP {

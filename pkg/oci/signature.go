@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
-	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/empty"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
@@ -102,7 +102,11 @@ func (c *Client) PushSignature(ctx context.Context, refStr string, payload []byt
 		"org.opencontainers.image.version": ref.Identifier() + signatureTagSuffix,
 		"org.opencontainers.image.title":   ref.Context().RepositoryStr(),
 	}
-	img = mutate.Annotations(img, annotations).(v1.Image)
+	var ok bool
+	img, ok = mutate.Annotations(img, annotations).(v1.Image)
+	if !ok {
+		return fmt.Errorf("annotations: expected v1.Image")
+	}
 
 	if err := remote.Write(sigTag, img, remoteOpts...); err != nil {
 		return fmt.Errorf("push signature: %w", err)

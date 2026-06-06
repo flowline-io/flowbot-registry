@@ -87,7 +87,7 @@ func (s *UserTokenService) GenerateAccessToken(userID int, email string) (string
 }
 
 // GenerateRefreshToken creates a random 256-bit hex string for use as a refresh token.
-func (s *UserTokenService) GenerateRefreshToken() (string, error) {
+func (*UserTokenService) GenerateRefreshToken() (string, error) {
 	b := make([]byte, 32)
 	if _, err := rand.Read(b); err != nil {
 		return "", fmt.Errorf("failed to generate refresh token: %w", err)
@@ -122,7 +122,10 @@ func (s *UserTokenService) ParseAccessToken(tokenStr string) (*AccessTokenClaims
 		return nil, fmt.Errorf("email claim missing or invalid")
 	}
 
-	jti, _ := claims["jti"].(string)
+	var jti string
+	if v, ok := claims["jti"].(string); ok {
+		jti = v
+	}
 
 	return &AccessTokenClaims{
 		UserID: int(userIDFloat),
