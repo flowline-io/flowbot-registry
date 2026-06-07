@@ -24,7 +24,7 @@ tasks:
   build:cli:
     desc: Build flowbot CLI
     cmds:
-      - go build -v -o bin/flowbot ./cmd/cli
+      - go build -v -ldflags="-s -w -X github.com/flowline-io/flowbot-registry/version.Buildtags=$(git describe --tags --always 2>/dev/null || echo dev)" -o bin/flowbot ./cmd/cli
 
   build:all:
     desc: Build all binaries
